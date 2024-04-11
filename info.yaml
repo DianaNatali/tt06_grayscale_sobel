@@ -15,12 +15,12 @@ project:
   
   # List your project's source files here. Source files must be in ./src and you must list each source file separately, one per line:
   source_files:     
-    - "src/tt_um_gray_sobel.sv"   
-    - "src/top_gray_sobel.sv"
-    - "src/parameters.svh"
-    - "src/sobel_control.sv"
-    - "src/sobel_core.sv"
-    - "src/gray_scale_core.sv"
+    - "tt_um_gray_sobel.sv"   
+    - "top_gray_sobel.sv"
+    - "parameters.svh"
+    - "sobel_control.sv"
+    - "sobel_core.sv"
+    - "gray_scale_core.sv"
     
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
