@@ -1,4 +1,4 @@
-`include "../src/parameters.svh"
+`include "parameters.svh"
 
 module tt_um_gray_sobel (
     input  wire [7:0] ui_in,    // Dedicated inputs - connected to the input switches

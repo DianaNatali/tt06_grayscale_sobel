@@ -1,4 +1,4 @@
-`include "../src/parameters.svh"
+`include "parameters.svh"
 
 module top_gray_sobel(
         input logic    clk_i,

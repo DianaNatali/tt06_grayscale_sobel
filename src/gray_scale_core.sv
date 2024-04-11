@@ -1,4 +1,4 @@
-`include "../src/parameters.svh" 
+`include "parameters.svh" 
 
 module gray_scale_core(
     input logic    clk_i,

@@ -1,4 +1,4 @@
-`include "../src/parameters.svh"
+`include "parameters.svh"
 
 module sobel_core (
     input sobel_matrix matrix_pixels_i,

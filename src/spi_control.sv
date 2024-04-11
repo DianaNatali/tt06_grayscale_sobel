@@ -1,4 +1,4 @@
-`include "../src/parameters.svh"
+`include "parameters.svh"
 
 module spi_control (
         input logic     clk_i,
