@@ -5,7 +5,7 @@
 __pycache__
 *sim_build*
 *runs*
-*.txt
+output_image.txt
 *.vvp
 *.vcd
 *.xml
