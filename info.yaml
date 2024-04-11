@@ -22,7 +22,6 @@ project:
     - "src/gray_scale_core.sv"
     - "src/tt_um_gray_sobel.sv"
     
-
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
   # Inputs
