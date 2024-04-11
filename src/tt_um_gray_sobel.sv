@@ -33,7 +33,7 @@ module tt_um_gray_sobel (
   logic [PIXEL_WIDTH_OUT-1:0] input_px;
   logic [PIXEL_WIDTH_OUT-1:0] output_px;
 
-  logic select;
+  logic [1:0] select;
   logic start;
   logic pixel_ready;
 
