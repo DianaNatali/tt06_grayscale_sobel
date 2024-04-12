@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1711840849" />
+    <testcase name="sobel_test_bench" classname="sobel_control_TB" file="/home/dnmaldonador/Documents/Materias/Maestria/tiny_tapeout/sobel_enhancement/sobel_control_TB.py" lineno="63" time="42.07940220832825" sim_time_ns="6054890.01" ratio_time="143892.0158614238" />
+  </testsuite>
+</testsuites>
