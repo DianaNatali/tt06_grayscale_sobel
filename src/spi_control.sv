@@ -20,7 +20,6 @@ module spi_control (
     logic [MAX_PIXEL_BITS-1:0] data_tx; 
     logic [MAX_PIXEL_BITS-1:0] spi_data_rx;
 
-    logic data_rdy;
     logic spi_rxtx_done;
     logic rxtx_done;
     logic rxtx_done_reg;
