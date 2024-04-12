@@ -12,7 +12,7 @@ module spi_control (
 
         //Sobel Interface
         output logic    [MAX_PIXEL_BITS-1:0] input_px_gray_o,
-        input logic     [MAX_PIXEL_BITS-1:0] output_px_sobel_i,
+        input logic     [MAX_PIXEL_BITS-1:0] output_px_sobel_i
     );
     
 
@@ -134,7 +134,7 @@ module spi_control (
     );
 
 
-    assign input_px_gray_o <= data_rx;
+    assign input_px_gray_o = data_rx;
     assign data_tx = output_px_sobel_i;
 
 endmodule

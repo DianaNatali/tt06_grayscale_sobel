@@ -30,8 +30,8 @@ module tt_um_gray_sobel (
   assign spi_sdi_i = uio_in[2];
   assign uio_out[3] = spi_sdo_o;
 
-  logic [PIXEL_WIDTH_OUT-1:0] input_px;
-  logic [PIXEL_WIDTH_OUT-1:0] output_px;
+  logic [MAX_PIXEL_BITS-1:0] input_px;
+  logic [MAX_PIXEL_BITS-1:0] output_px;
 
   logic [1:0] select;
   logic start;
@@ -73,8 +73,8 @@ module tt_um_gray_sobel (
     .spi_cs_i(spi_cs_i),
     .spi_sdo_o(spi_sdo_o),
 
-    .input_px_o(input_px),
-    .output_px_i(output_px)
+    .input_px_gray_o(input_px),
+    .output_px_sobel_i(output_px)
   );
 
 endmodule
