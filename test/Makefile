@@ -6,6 +6,8 @@ TOPLEVEL_LANG ?= verilog
 COCOTB_HDL_TIMEUNIT = "1ns"
 COCOTB_HDL_TIMEPRECISION = "10ps"
 
+COCOTB_SIM = 1
+
 PWD=$(shell pwd)
 
 VERILOG_SOURCES += $(PWD)/../src/parameters.svh

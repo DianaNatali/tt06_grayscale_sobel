@@ -1,4 +1,8 @@
-`include "parameters.svh"
+`ifdef COCOTB_SIM
+  `include "../src/parameters.svh"
+`else
+  `include "parameters.svh"
+`endif
 
 module spi_control (
         input logic     clk_i,

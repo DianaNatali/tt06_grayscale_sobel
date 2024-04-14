@@ -1,4 +1,8 @@
-`include "parameters.svh"
+`ifdef COCOTB_SIM
+  `include "../src/parameters.svh"
+`else
+  `include "parameters.svh"
+`endif
 
 module sobel_core (
     input sobel_matrix matrix_pixels_i,

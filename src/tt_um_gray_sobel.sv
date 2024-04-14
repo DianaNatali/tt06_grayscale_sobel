@@ -1,4 +1,8 @@
-`include "parameters.svh"
+`ifdef COCOTB_SIM
+  `include "../src/parameters.svh"
+`else
+  `include "parameters.svh"
+`endif
 
 module tt_um_gray_sobel (
     input  wire [7:0] ui_in,    // Dedicated inputs - connected to the input switches
