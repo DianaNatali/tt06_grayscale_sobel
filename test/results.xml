@@ -1,6 +1,0 @@
-<testsuites name="results">
-  <testsuite name="all" package="all">
-    <property name="random_seed" value="1712939586" />
-    <testcase name="tt_um_gray_sobel_TB" classname="tt_um_gray_sobel_TB" file="/home/dnmaldonador/Documents/Materias/Maestria/tiny_tapeout/tt06_grayscale_sobel/test/tt_um_gray_sobel_TB.py" lineno="79" time="0.003407001495361328" sim_time_ns="200.01" ratio_time="58705.58033869839" />
-  </testsuite>
-</testsuites>
