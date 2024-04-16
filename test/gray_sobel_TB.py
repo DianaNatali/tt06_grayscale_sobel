@@ -35,7 +35,7 @@ def get_neighbor_array(image, ram_input):
             neighbor_count += 1
     return ram_neighbors
 
-select = 2
+select = 3
 
 #-------------------------------Convert RGB image to grayscale------------------------------------------
 img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
@@ -49,9 +49,7 @@ red_channel_5bit = (red_channel >> 3) & 0x1F
 green_channel_6bit = (green_channel >> 2) & 0x3F
 blue_channel_5bit = (blue_channel >> 3) & 0x1F
 
-img_rgb565 = [[red_channel_5bit[i, j], green_channel_6bit[i, j], blue_channel_5bit[i, j]] for i in range(img_original.shape[0]) for j in range(img_original.shape[1])]
-
-img_rgb565 = [[img_rgb565[i * img_original.shape[1] + j] for j in range(img_original.shape[1])] for i in range(img_original.shape[0])]
+img_rgb565 = np.dstack((red_channel_5bit, green_channel_6bit, blue_channel_5bit))
 
 
 RAM_input_image = []
@@ -178,8 +176,8 @@ async def gray_sobel_TB(dut):
         encode_image = []
         for ind, pixel in enumerate(array_out):
             value = int(pixel, 2)
-            red = ((value >> 10) & 0x1F)
-            green = ((value >> 5) & 0x1F)
+            red = ((value >> 11) & 0x1F)
+            green = ((value >> 5) & 0x3F)
             blue = (value & 0x1F)
             row = [red, green, blue]
             encode_image.append(row)
