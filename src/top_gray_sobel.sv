@@ -19,11 +19,11 @@ module top_gray_sobel(
 
     logic px_rdy_i_sobel;
 
+    logic select_sobel_mux;
     logic [PIXEL_WIDTH_OUT-1:0] in_px_sobel;
 
     logic [PIXEL_WIDTH_OUT-1:0] out_px_gray;
     logic [PIXEL_WIDTH_OUT-1:0] out_px_sobel;
-    logic [MAX_PIXEL_BITS-1:0] out_px_rgb;
 
     logic px_rdy_o_gray;
     logic px_rdy_o_sobel;
@@ -49,23 +49,10 @@ module top_gray_sobel(
         .px_rdy_o(px_rdy_o_sobel)
     );
 
-    typedef enum logic [1:0]{
-        IDLE,
-        BYPASS} state_t;
-    
-    state_t fsm_state, next;
-    
-    
-    always_ff @(posedge clk_i or negedge nreset_i)begin
-        if(!nreset_i)begin
-            fsm_state <= IDLE;
-        end else begin
-            fsm_state <= next;
-        end
-    end
-    
+    assign select_sobel_mux = select_i[0];
+
     always_comb begin
-        case(select_i[0])
+        case(select_sobel_mux)
             1'b0:begin
                 in_px_sobel = out_px_gray;
             end
