@@ -68,7 +68,7 @@ module tt_um_gray_sobel (
     .in_pixel_i(input_px),
 
     .out_pixel_o(output_px),
-    .px_ready_sobel_o(pixel_ready_o)
+    .px_rdy_o(pixel_ready_o)
   );
 
   spi_control spi0 (
