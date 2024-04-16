@@ -38,15 +38,17 @@ module tt_um_gray_sobel (
   logic [MAX_PIXEL_BITS-1:0] output_px;
 
   logic [1:0] select;
-  logic start;
-  logic pixel_ready;
+  logic start_sobel;
+  logic pixel_ready_i;
+  logic pixel_ready_o;
 
   logic clk_i;
   assign clk_i = clk;
   
+  assign pixel_ready_i = uio_in[3];
   assign select = uio_in[5:4];
-  assign start = uio_in[6];
-  assign uio_out[7] = pixel_ready;
+  assign start_sobel = uio_in[6];
+  assign uio_out[7] = pixel_ready_o;
 
   logic nreset_i; 
   spi_dep_async_nreset_synchronizer adc_spi_nreset_sync0 (
@@ -61,11 +63,12 @@ module tt_um_gray_sobel (
     .nreset_i(nreset_i),
 
     .select_i(select),
-    .start_i(start),
+    .start_sobel_i(start_sobel),
+    .px_rdy_i(pixel_ready_i),
     .in_pixel_i(input_px),
 
     .out_pixel_o(output_px),
-    .px_ready_sobel_o(pixel_ready)
+    .px_ready_sobel_o(pixel_ready_o)
   );
 
   spi_control spi0 (
