@@ -12,7 +12,7 @@ RPI_SPI_CLK = 66/2
 ADC_SPI_CLK = 50
 
 DUTY_CYCLE = 0.5
-STREAM_DATA_WIDTH = 16
+STREAM_DATA_WIDTH = 15
 
 
 def get_neighbors(ram_in, index, width):
@@ -71,6 +71,58 @@ async def reset_dut(dut, duration_ns):
     dut.rst_n.value = 1
     dut.rst_n._log.debug("Reset complete")
 
+async def spi_transfer_pi(data, uio_in, data_tx_rpi):
+    await Timer(3, units="ns")
+    rpi_ss = 0
+    mask = 1 << 1
+    uio_in_value = (uio_in.value & ~mask) | (rpi_ss << 1)
+    uio_in.value = uio_in_value
+
+    rpi_sck = 1
+    mask = 1 << 0
+    uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
+    uio_in.value = uio_in_value
+
+
+    data_tx_rpi = (data & 0xFF) << 8 | (data >> 8)
+
+    await Timer(RPI_SPI_CLK*6, units="ns")
+
+    for i in range (STREAM_DATA_WIDTH):
+        rpi_sck = 0
+        mask = 1 << 0
+        uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
+        uio_in.value = uio_in_value
+        
+        rpi_mosi = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
+        mask = 1 << 2
+        uio_in_value = (uio_in.value & ~mask) | (rpi_mosi << 2)
+        uio_in.value = uio_in_value
+
+        await Timer(RPI_SPI_CLK, units="ns")
+
+        print(uio_in_value)
+        
+        rpi_sck = 1
+        mask = 1 << 0
+        uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
+        uio_in.value = uio_in_value
+
+        await Timer(RPI_SPI_CLK, units="ns")
+    
+    await Timer(RPI_SPI_CLK*6, units="ns")
+    rpi_ss = 1
+    mask = 1 << 1
+    uio_in_value = (uio_in.value & ~mask) | (rpi_ss << 1)
+    uio_in.value = uio_in_value
+
+async def wait_fallingedge_pixel_ready(uio_out):
+    # Wait until bit 7 = 0 (Falling edge)
+    while uio_out.value.integer & (1 << 7):
+        await RisingEdge(uio_out)
+
+    print("Falling edge detected at bit 7")
+
 # Wait until output file is completely written
 async def wait_file():
     Path('output_image_sobel.txt').exists()
@@ -78,60 +130,66 @@ async def wait_file():
 @cocotb.test()
 async def tt_um_gray_sobel_TB(dut):
 
-    # Clock cycle// 15 bits width 9 pixel RAM 
-    clock = Clock(dut.clk, ADC_SPI_CLK*DUTY_CYCLE, units="ns") 
+    # Clock cycle
+    clock = Clock(dut.clk, 10, units="ns") 
     cocotb.start_soon(clock.start(start_high=False))
 
-    # # Inital
-    # dut.in_pixel_i.value = 0
-    # dut.start_i.value = 0
-    # dut.select_i.value = 0
+    # Inital
+    dut.ena.value = 0
+    dut.uio_in.value = 0
+    rpi_mosi = 0
+    rpi_ss = 1 
+    rpi_sck = 0
+    data_tx_rpi = 0
 
-    # # Store processed pixels
-    # RAM_output_image = []
+    # Store processed pixels
+    RAM_output_image = []
+   
+    await reset_dut(dut, 200)
 
-    await FallingEdge(dut.clk)
-    
-    await reset_dut(dut, 200)    
-    # dut.start_i.value = 1
-    # dut.select_i.value = select
+    await FallingEdge(dut.clk)   
+    select_bin = "{:02b}".format(select) 
+    dut.ena.value = 1
+    start = 1
+    uio_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[0]) << 4) | (int(select_bin[1]) << 5) | (int(start) << 6)
+    dut.uio_in.value = uio_in_value
 
-    # if select == 0 or  select == 3:
-    #     for ind, pixel in enumerate(RAM_input_image):
-    #         await FallingEdge(dut.clk_i)
-    #         dut.in_pixel_i.value = int(pixel, 2)
-    #         #await FallingEdge(dut.px_ready_sobel_o) 
-    #         RAM_output_image.append(dut.out_pixel_o.value)
-    #         if ind%10000 == 0:
-    #             print(f'Processed pixels: {ind}')
-    # else:
-    #     RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
-    #     firts_neighbors = RAM_neighbors[0]
+    if select == 0 or  select == 3:
+        for ind, pixel in enumerate(RAM_input_image):
+            await FallingEdge(dut.clk)
+            await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
+            await wait_fallingedge_pixel_ready(dut.uio_out) 
+            #RAM_output_image.append(dut.out_pixel_o.value)
+            if ind%10000 == 0:
+                print(f'Processed pixels: {ind}')
+    else:
+        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
+        firts_neighbors = RAM_neighbors[0]
 
-    #     for ind, pixel in enumerate(firts_neighbors):
-    #         await FallingEdge(dut.clk_i)
-    #         dut.in_pixel_i.value = int(pixel, 2)
+        for ind, pixel in enumerate(firts_neighbors):
+            await FallingEdge(dut.clk)
+            await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
 
-    #         if ind == 8:
-    #             if dut.px_ready_sobel_o:
-    #                 await FallingEdge(dut.px_ready_sobel_o) 
-    #                 RAM_output_image.append(dut.out_pixel_o.value)
+            if ind == 8:
+                if dut.uio_out.value.integer & (1 << 7):
+                    await wait_fallingedge_pixel_ready(dut.uio_out) 
+                    #RAM_output_image.append(dut.out_pixel_o.value)
 
-    #     for i, neighbor_array in enumerate(RAM_neighbors[1:]):
-    #         for ind, pixel in enumerate(neighbor_array[6:]):
-    #             await FallingEdge(dut.clk_i)  
-    #             dut.in_pixel_i.value = int(pixel, 2)
+        # for i, neighbor_array in enumerate(RAM_neighbors[1:]):
+        #     for ind, pixel in enumerate(neighbor_array[6:]):
+        #         await FallingEdge(dut.clk)  
+        #         await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
 
-    #             if ind == 2:
-    #                 if dut.px_ready_sobel_o:
-    #                     await FallingEdge(dut.px_ready_sobel_o) 
-    #                     RAM_output_image.append(dut.out_pixel_o.value)
-    #         if i%10000 == 0:
-    #             print(f'Processed pixels: {i}')
+        #         if ind == 2:
+        #             if dut.uio_out.value.integer & (1 << 7):
+        #                 await wait_fallingedge_pixel_ready(dut.uio_out) 
+        #                 #RAM_output_image.append(dut.out_pixel_o.value)
+        #     if i%10000 == 0:
+        #         print(f'Processed pixels: {i}')
 
-
-    # dut.start_i.value = 0
-    # await RisingEdge(dut.clk_i)
+    await RisingEdge(dut.clk)
+    uio_in_value = (select << 4) | (1 << 5)
+    dut.uio_in.value = uio_in_value
 
     # # Write output RAM into txt file
     # if select == 3:

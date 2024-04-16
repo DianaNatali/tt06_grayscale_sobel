@@ -16,9 +16,9 @@ module tt_um_gray_sobel (
 );
 
   assign uio_oe = 8'b10001000; 
-  assign uio_out[2:0] = '0;
-  assign uio_out[6:4] = '0;
-  assign uo_out[7:0] = '0;
+  assign uio_out[2:0] = 'b0;
+  assign uio_out[6:4] = 'b0;
+  assign uo_out[7:0] = 'b0;
 
   logic nreset_async_i;
   assign nreset_async_i = rst_n;

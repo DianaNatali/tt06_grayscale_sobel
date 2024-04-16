@@ -8,11 +8,12 @@ module sobel_control (
         input logic    clk_i,
         input logic    nreset_i,
 
-        input logic    start_i,
-        input logic    [PIXEL_WIDTH_OUT-1:0] in_px_gray_i,
+        input logic    start_sobel_i,
+        input logic    px_rdy_i,
+        input logic    [PIXEL_WIDTH_OUT-1:0] in_px_sobel_i,
 
         output logic   [PIXEL_WIDTH_OUT-1:0] out_px_sobel_o,
-        output logic   px_ready_o
+        output logic   px_rdy_o
     );
 
     logic [SOBEL_COUNTER_MAX_BITS:0] counter_sobel;
@@ -49,7 +50,7 @@ module sobel_control (
     always_comb begin
         case(fsm_state)
             IDLE: begin
-                if(start_i) next = FIRST_MATRIX;
+                if(start_sobel_i) next = FIRST_MATRIX;
                 else next = IDLE;
             end
             FIRST_MATRIX: begin 
@@ -57,7 +58,7 @@ module sobel_control (
                 else next = FIRST_MATRIX;
             end
             NEXT_MATRIX:begin
-                if (start_i == 0) next = IDLE; 
+                if (start_sobel_i == 0) next = FIRST_MATRIX; 
                 else next = NEXT_MATRIX;
             end
             default: next = IDLE;
@@ -81,50 +82,54 @@ module sobel_control (
                 end
                 FIRST_MATRIX: begin
                     px_ready <= 'b0;
-                    out_sobel <= '0;
-                    case(counter_sobel)
-                        1: sobel_pixels.vector0.pix0 <= in_px_gray_i;
-                        2: sobel_pixels.vector0.pix1 <= in_px_gray_i;
-                        3: sobel_pixels.vector0.pix2 <= in_px_gray_i;
-                        4: sobel_pixels.vector1.pix0 <= in_px_gray_i;
-                        5: sobel_pixels.vector1.pix1 <= in_px_gray_i;
-                        6: sobel_pixels.vector1.pix2 <= in_px_gray_i;
-                        7: sobel_pixels.vector2.pix0 <= in_px_gray_i;
-                        8: sobel_pixels.vector2.pix1 <= in_px_gray_i;
-                        9: sobel_pixels.vector2.pix2 <= in_px_gray_i;
-                    endcase
-                    counter_sobel <= counter_sobel + 1;
-                    if (counter_sobel == 9) begin
-                        counter_pixels <= counter_pixels + 1;
-                        counter_sobel <= 'b0;
-                        px_ready <= 'b1;
-                        out_sobel <= out_sobel_core;
-                        //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
+                    if (px_rdy_i) begin
+                        out_sobel <= '0;
+                        case(counter_sobel)
+                            0: sobel_pixels.vector0.pix0 <= in_px_sobel_i;
+                            1: sobel_pixels.vector0.pix1 <= in_px_sobel_i;
+                            2: sobel_pixels.vector0.pix2 <= in_px_sobel_i;
+                            3: sobel_pixels.vector1.pix0 <= in_px_sobel_i;
+                            4: sobel_pixels.vector1.pix1 <= in_px_sobel_i;
+                            5: sobel_pixels.vector1.pix2 <= in_px_sobel_i;
+                            6: sobel_pixels.vector2.pix0 <= in_px_sobel_i;
+                            7: sobel_pixels.vector2.pix1 <= in_px_sobel_i;
+                            8: sobel_pixels.vector2.pix2 <= in_px_sobel_i;
+                        endcase
+                        counter_sobel <= counter_sobel + 1;
+                        if (counter_sobel == 8) begin
+                            counter_pixels <= counter_pixels + 1;
+                            counter_sobel <= 'b0;
+                            px_ready <= 'b1;
+                            out_sobel <= out_sobel_core;
+                            //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
+                        end
                     end
                 end
                 NEXT_MATRIX: begin
                     px_ready <= 'b0;
-                    out_sobel <= '0;
-                    case(counter_sobel)
-                        1: begin 
-                            sobel_pixels.vector0 <= sobel_pixels.vector1;
-                            sobel_pixels.vector1 <= sobel_pixels.vector2;
-                            sobel_pixels.vector2.pix0 <= in_px_gray_i;
+                    if (px_rdy_i) begin
+                        out_sobel <= '0;
+                        case(counter_sobel)
+                            0: begin 
+                                sobel_pixels.vector0 <= sobel_pixels.vector1;
+                                sobel_pixels.vector1 <= sobel_pixels.vector2;
+                                sobel_pixels.vector2.pix0 <= in_px_sobel_i;
+                            end
+                            1: begin
+                                sobel_pixels.vector2.pix1 <= in_px_sobel_i;
+                            end
+                            2: begin
+                                sobel_pixels.vector2.pix2 <= in_px_sobel_i;
+                            end
+                        endcase
+                        counter_sobel <= counter_sobel + 1;
+                        if (counter_sobel == 2) begin
+                            counter_pixels <= counter_pixels + 1;
+                            counter_sobel <= 'b0;
+                            px_ready <= 'b1;
+                            out_sobel <= out_sobel_core;
+                            //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
                         end
-                        2: begin
-                            sobel_pixels.vector2.pix1 <= in_px_gray_i;
-                        end
-                        3: begin
-                            sobel_pixels.vector2.pix2 <= in_px_gray_i;
-                        end
-                    endcase
-                    counter_sobel <= counter_sobel + 1;
-                    if (counter_sobel == 3) begin
-                        counter_pixels <= counter_pixels + 1;
-                        counter_sobel <= 'b0;
-                        px_ready <= 'b1;
-                        out_sobel <= out_sobel_core;
-                        //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
                     end
                 end
                 default: begin
@@ -139,6 +144,6 @@ module sobel_control (
 
 
     assign  out_px_sobel_o = out_sobel;
-    assign  px_ready_o = px_ready; 
+    assign  px_rdy_o = px_ready; 
 
 endmodule

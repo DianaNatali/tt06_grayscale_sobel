@@ -11,7 +11,7 @@ module spi_dep_async_nreset_synchronizer (
         if (!async_nreset_i) begin
             {nreset_o, r_sync} <= 2'b00;
         end else begin
-            {nreset_o, r_sync} <= {r_sync,tied_value_i};
+            {nreset_o, r_sync} <= {r_sync, tied_value_i};
         end
     end
 
@@ -30,7 +30,7 @@ module spi_dep_signal_synchronizer (
         if (!nreset_i) begin
             {signal_o, signal_sync} <= '0;
         end else begin
-            {signal_o,signal_sync} <= {signal_sync,async_signal_i};
+            {signal_o, signal_sync} <= {signal_sync,async_signal_i};
         end
     end
 
