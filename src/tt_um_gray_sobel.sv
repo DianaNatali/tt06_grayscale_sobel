@@ -58,7 +58,7 @@ module tt_um_gray_sobel (
     .nreset_o(nreset_i)
   );
 
-  top_gray_sobel sobel0 (
+  top_gray_sobel gray_sobel0 (
     .clk_i(clk_i),
     .nreset_i(nreset_i),
 

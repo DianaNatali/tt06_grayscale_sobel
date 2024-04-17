@@ -35,7 +35,7 @@ def get_neighbor_array(image, ram_input):
             neighbor_count += 1
     return ram_neighbors
 
-select = 3
+select = 2
 
 #-------------------------------Convert RGB image to grayscale------------------------------------------
 img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
@@ -50,7 +50,6 @@ green_channel_6bit = (green_channel >> 2) & 0x3F
 blue_channel_5bit = (blue_channel >> 3) & 0x1F
 
 img_rgb565 = np.dstack((red_channel_5bit, green_channel_6bit, blue_channel_5bit))
-
 
 RAM_input_image = []
 
@@ -102,11 +101,11 @@ async def gray_sobel_TB(dut):
     # Store processed pixels
     RAM_output_image = []
 
-    # Obtener la señal px_rdy_o del DUT (Device Under Test)
+    # Get px_rdy_o signal DUT (Device Under Test)
     px_rdy_o = dut.px_rdy_o
     px_out = dut.out_pixel_o
 
-    # Iniciar el proceso para monitorear la señal px_rdy_o en paralelo
+    # Start the process to monitor the px_rdy_o signal in parallel
     cocotb.start_soon(monitor_px_rdy(px_rdy_o, RAM_output_image, px_out))
     
     await reset_dut(dut, 10)    
