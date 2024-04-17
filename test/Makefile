@@ -23,11 +23,11 @@ VERILOG_SOURCES += $(PWD)/../src/spi_control.sv
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 # TOPLEVEL = top_gray_sobel
-TOPLEVEL = top_gray_sobel
+TOPLEVEL = tt_um_gray_sobel
 
 # MODULE is the basename of the Python test file
 # MODULE = gray_sobel_TB
-MODULE = gray_sobel_TB
+MODULE = tt_um_gray_sobel_TB
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim

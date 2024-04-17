@@ -21,8 +21,8 @@ module spi_core #(
     logic [WORD_SIZE-1:0] sdo_register;
     logic [$clog2(WORD_SIZE):0] counter;
 
-    //assign nreset_i = ~cs_i;  <= Preguntar
-    assign nreset_i = cs_i; 
+    assign nreset_i = ~cs_i; 
+    //assign nreset_i = cs_i; 
     assign sdo_o = sdo_register[WORD_SIZE-1];
 
     always_ff @(negedge sck_i or negedge nreset_i) begin

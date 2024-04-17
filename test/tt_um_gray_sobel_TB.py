@@ -7,12 +7,13 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
-
+# Parameters
 RPI_SPI_CLK = 66/2
 ADC_SPI_CLK = 50
-
 DUTY_CYCLE = 0.5
-STREAM_DATA_WIDTH = 15
+STREAM_DATA_WIDTH = 16
+clock_period = 1 / ADC_SPI_CLK  # Clock period in seconds
+half_period = clock_period * DUTY_CYCLE
 
 
 def get_neighbors(ram_in, index, width):
@@ -32,7 +33,8 @@ def get_neighbor_array(image, ram_input):
 
     ram_neighbors = []
 
-    neighbor_count = 0
+    neighbor_count = 0 
+    half_period = clock_period * DUTY_CYCLE
     for y in range(1, height - 1):
         for x in range(1, width - 1):
             i = y * width + x
@@ -64,64 +66,72 @@ else:
             pixel = input_image[i][j]
             RAM_input_image.append(f"{pixel[0]:05b}{pixel[1]:05b}{pixel[2]:05b}")
 #----------------------------------------cocotb test bench----------------------------------------------
-# Reset
+#reset
 async def reset_dut(dut, duration_ns):
     dut.rst_n.value = 0
     await Timer(duration_ns, units="ns")
     dut.rst_n.value = 1
     dut.rst_n._log.debug("Reset complete")
 
-async def spi_transfer_pi(data, uio_in, data_tx_rpi):
-    await Timer(3, units="ns")
-    rpi_ss = 0
-    mask = 1 << 1
-    uio_in_value = (uio_in.value & ~mask) | (rpi_ss << 1)
-    uio_in.value = uio_in_value
-
-    rpi_sck = 1
-    mask = 1 << 0
-    uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
-    uio_in.value = uio_in_value
-
-
-    data_tx_rpi = (data & 0xFF) << 8 | (data >> 8)
-
-    await Timer(RPI_SPI_CLK*6, units="ns")
-
-    for i in range (STREAM_DATA_WIDTH):
-        rpi_sck = 0
-        mask = 1 << 0
-        uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
-        uio_in.value = uio_in_value
-        
-        rpi_mosi = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
-        mask = 1 << 2
-        uio_in_value = (uio_in.value & ~mask) | (rpi_mosi << 2)
-        uio_in.value = uio_in_value
-
-        await Timer(RPI_SPI_CLK, units="ns")
-
-        print(uio_in_value)
-        
-        rpi_sck = 1
-        mask = 1 << 0
-        uio_in_value = (uio_in.value & ~mask) | (rpi_sck << 0)
-        uio_in.value = uio_in_value
-
-        await Timer(RPI_SPI_CLK, units="ns")
-    
-    await Timer(RPI_SPI_CLK*6, units="ns")
-    rpi_ss = 1
-    mask = 1 << 1
-    uio_in_value = (uio_in.value & ~mask) | (rpi_ss << 1)
-    uio_in.value = uio_in_value
+#clock
+@cocotb.coroutine
+async def clock_generator(dut):
+    # Infinite loop to generate the clock
+    while True:
+        dut.clk <= 0
+        await Timer(half_period, units="ns")
+        dut.clk <= 1
+        await Timer(half_period, units="ns")
 
 async def wait_fallingedge_pixel_ready(uio_out):
     # Wait until bit 7 = 0 (Falling edge)
     while uio_out.value.integer & (1 << 7):
         await RisingEdge(uio_out)
 
-    print("Falling edge detected at bit 7")
+#spi transfer data 
+async def spi_transfer_pi(data, dut):
+    data_tx_rpi = 0
+    await Timer(3)
+
+    mask_sck = 1 << 0
+    mask_ss = 1 << 1 
+    mask_mosi = 1 << 2
+
+    rpi_ss = 0
+    rpi_sck = 1
+        
+    uio_in_value = (dut.uio_in.value & ~(mask_sck | mask_ss)) | ((rpi_sck << 0) & mask_sck) | ((rpi_ss << 1) & mask_ss)
+    dut.uio_in.value = uio_in_value
+    
+    data_tx_rpi = (data & 0xFF) << 8 | (data >> 8)
+
+    #Esperar múltiplos del período de reloj SPI
+    for _ in range(6):
+        await Timer(RPI_SPI_CLK)
+
+     # Transferir datos bit a bit
+    for i in range(STREAM_DATA_WIDTH):
+        rpi_sck = 0
+        rpi_mosi = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
+        
+        uio_in_value = (dut.uio_in.value & ~(mask_sck | mask_mosi)) | ((rpi_sck << 0) & mask_sck) | ((rpi_mosi << 2) & mask_mosi)
+        dut.uio_in.value = uio_in_value
+
+        await Timer(RPI_SPI_CLK)
+
+        rpi_sck = 1
+        uio_in_value = (dut.uio_in.value & ~mask_sck) | (rpi_sck << 0)
+        dut.uio_in.value = uio_in_value
+
+        await Timer(RPI_SPI_CLK)
+   
+    for _ in range(6):
+        await Timer(RPI_SPI_CLK)
+    
+    rpi_ss = 1
+    uio_in_value = (dut.uio_in.value & ~mask_ss) | (rpi_ss << 1)
+    dut.uio_in.value = uio_in_value
+
 
 # Wait until output file is completely written
 async def wait_file():
@@ -131,109 +141,41 @@ async def wait_file():
 async def tt_um_gray_sobel_TB(dut):
 
     # Clock cycle
-    clock = Clock(dut.clk, 10, units="ns") 
-    cocotb.start_soon(clock.start(start_high=False))
+    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
     # Inital
     dut.ena.value = 0
     dut.uio_in.value = 0
     rpi_mosi = 0
     rpi_ss = 1 
-    rpi_sck = 0
-    data_tx_rpi = 0
+    rpi_sck = 1
 
     # Store processed pixels
     RAM_output_image = []
-   
-    await reset_dut(dut, 200)
-
-    await FallingEdge(dut.clk)   
+      
     select_bin = "{:02b}".format(select) 
     dut.ena.value = 1
     start = 1
     uio_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[0]) << 4) | (int(select_bin[1]) << 5) | (int(start) << 6)
     dut.uio_in.value = uio_in_value
 
-    if select == 0 or  select == 3:
+    await reset_dut(dut, 200)
+
+    mask_px_rdy_i = 1 << 3
+
+    if select == 2 or  select == 3:
         for ind, pixel in enumerate(RAM_input_image):
             await FallingEdge(dut.clk)
-            await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
-            await wait_fallingedge_pixel_ready(dut.uio_out) 
-            #RAM_output_image.append(dut.out_pixel_o.value)
+            px_rdy_i = 1
+            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
+            dut.uio_in.value = uio_in_value
+            await FallingEdge(dut.clk)
+            px_rdy_i = 0
+            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
+            dut.uio_in.value = uio_in_value
+            await spi_transfer_pi(int(pixel, 2), dut)
+            
             if ind%10000 == 0:
                 print(f'Processed pixels: {ind}')
-    else:
-        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
-        firts_neighbors = RAM_neighbors[0]
 
-        for ind, pixel in enumerate(firts_neighbors):
-            await FallingEdge(dut.clk)
-            await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
 
-            if ind == 8:
-                if dut.uio_out.value.integer & (1 << 7):
-                    await wait_fallingedge_pixel_ready(dut.uio_out) 
-                    #RAM_output_image.append(dut.out_pixel_o.value)
-
-        # for i, neighbor_array in enumerate(RAM_neighbors[1:]):
-        #     for ind, pixel in enumerate(neighbor_array[6:]):
-        #         await FallingEdge(dut.clk)  
-        #         await spi_transfer_pi(int(pixel, 2), dut.uio_in, data_tx_rpi)
-
-        #         if ind == 2:
-        #             if dut.uio_out.value.integer & (1 << 7):
-        #                 await wait_fallingedge_pixel_ready(dut.uio_out) 
-        #                 #RAM_output_image.append(dut.out_pixel_o.value)
-        #     if i%10000 == 0:
-        #         print(f'Processed pixels: {i}')
-
-    await RisingEdge(dut.clk)
-    uio_in_value = (select << 4) | (1 << 5)
-    dut.uio_in.value = uio_in_value
-
-    # # Write output RAM into txt file
-    # if select == 3:
-    #     with open('output_image.txt', 'w') as file_out:
-    #         for pixel in RAM_output_image:
-    #             file_out.write(f"{pixel}\n")
-    # else:
-    #     with open('output_image.txt', 'w') as file_out:
-    #         for pixel in RAM_output_image:
-    #             file_out.write(f"{int(str(pixel), 2)}\n")
-
-    # # ############### Read test bench output ####################
-    # await wait_file() # Wait until output file is completely written
-
-    # # read file
-    
-    # if select == 3:
-    #     with open('output_image.txt', 'r') as f: 
-    #         out_hw_txt = f.read().splitlines()
-
-    #     array_out = np.array(out_hw_txt)
-
-    #     encode_image = []
-    #     for ind, pixel in enumerate(array_out):
-    #         value = int(pixel, 2)
-    #         red = ((value >> 10) & 0x1F)
-    #         green = ((value >> 5) & 0x1F)
-    #         blue = (value & 0x1F)
-    #         row = [red, green, blue]
-    #         encode_image.append(row)
-    #     array_out_reshape = np.reshape(encode_image, (240, 320, 3))        
-    # else:
-    #     with open('output_image.txt', 'r') as f: 
-    #         out_hw_txt = f.read().splitlines()  
-
-    #     # Arrange pixels
-    #     array_out = np.array(out_hw_txt)
-    #     if select == 0:
-    #         array_out_reshape = np.reshape(array_out, (240, 320))
-    #     else:   
-    #         array_out_reshape = np.reshape(array_out, (240-2, 320-2))
-        
-    # array_out = array_out_reshape.astype(np.uint8)
-    # cv2.imwrite('output_image.jpg', array_out)
-    # out_image = cv2.imread('output_image.jpg')
-    # plt.imshow(out_image)
-    # plt.show()
