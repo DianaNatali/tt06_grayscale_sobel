@@ -8,6 +8,22 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
+## Inputs
+## spi_sck_i = uio_in[0]
+## spi_cs_i = uio_in[1]
+## spi_sdi_i = uio_in[2]
+## select_i = uio_in[5:4]
+## start_sobel_i = uio_in[6];
+
+## Outputs
+## uio_out[3] = spi_sdo_o;
+
+## Select process
+## 00 -> Gray + sobel
+## 01 -> Only sobel
+## 10 -> Only gray
+## 11 -> Bypass
+
 # Parameters
 RPI_SPI_CLK = 66/2
 ADC_SPI_CLK = 50
@@ -15,6 +31,7 @@ DUTY_CYCLE = 0.5
 STREAM_DATA_WIDTH = 16
 clock_period = 1 / ADC_SPI_CLK  # Clock period in seconds
 half_period = clock_period * DUTY_CYCLE
+PIXEL_SIM = 10   # Number of pixels for testing
 
 px_rdy_high_count = 0
 
@@ -173,10 +190,10 @@ async def tt_um_gray_sobel_TB(dut):
       
     select_bin = "{:02b}".format(select) 
     dut.ena.value = 1
-    start = 1
+    start_sobel = 0
     px_rdy_i = 0
 
-    uio_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(px_rdy_i) << 3) | (int(select_bin[1]) << 4) | (int(select_bin[0]) << 5) | (int(start) << 6)
+    uio_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(px_rdy_i) << 3) | (int(select_bin[1]) << 4) | (int(select_bin[0]) << 5) | (int(start_sobel) << 6)
     dut.uio_in.value = uio_in_value
 
     # Get px_rdy_o signal DUT (Device Under Test)
@@ -185,60 +202,45 @@ async def tt_um_gray_sobel_TB(dut):
     # Start the process to monitor the px_rdy_o signal in parallel
     await reset_dut(dut, 100)
 
-    mask_px_rdy_i = 1 << 3
-
     if select == 2 or  select == 3:
+        start_sobel = 0
+        mask_start_sobel = 1 << 6
+        uio_in_value = (dut.uio_in.value & ~mask_start_sobel) | (start_sobel << 6)
+        dut.uio_in.value = uio_in_value
+
         for ind, pixel in enumerate(RAM_input_image):
             await FallingEdge(dut.clk)
-            px_rdy_i = 1
-            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-            dut.uio_in.value = uio_in_value
-            await FallingEdge(dut.clk)
-            px_rdy_i = 0
-            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-            dut.uio_in.value = uio_in_value
             await spi_transfer_pi(int(pixel, 2), dut)
             
             if ind%10000 == 0:
                 print(f'Processed pixels: {ind}')
+            
+            if ind > PIXEL_SIM:
+                break
     else:
-        dut.start_sobel_i.value = 1
+        start_sobel = 1
+        mask_start_sobel = 1 << 6
+        uio_in_value = (dut.uio_in.value & ~mask_start_sobel) | (start_sobel << 6)
+        dut.uio_in.value = uio_in_value
+
         RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
         firts_neighbors = RAM_neighbors[0]
 
         for ind, pixel in enumerate(firts_neighbors):
             await FallingEdge(dut.clk)
-            px_rdy_i = 1
-            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-            dut.uio_in.value = uio_in_value
-            await FallingEdge(dut.clk)
-            px_rdy_i = 0
-            uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-            dut.uio_in.value = uio_in_value
             await spi_transfer_pi(int(pixel, 2), dut)
 
         for i, neighbor_array in enumerate(RAM_neighbors[1:]):
             for ind, pixel in enumerate(neighbor_array[6:]):
                 await FallingEdge(dut.clk)
-                px_rdy_i = 1
-                uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-                dut.uio_in.value = uio_in_value
-                await FallingEdge(dut.clk)
-                px_rdy_i = 0
-                uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-                dut.uio_in.value = uio_in_value
                 await spi_transfer_pi(int(pixel, 2), dut)
             if i%10000 == 0:
                 print(f'Processed pixels: {i}')
 
+            if ind > PIXEL_SIM:
+                break
+
     await FallingEdge(dut.clk)
-    px_rdy_i = 1
-    uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-    dut.uio_in.value = uio_in_value
-    await FallingEdge(dut.clk)
-    px_rdy_i = 0
-    uio_in_value = (dut.uio_in.value & ~mask_px_rdy_i) | (px_rdy_i << 3)
-    dut.uio_in.value = uio_in_value
 
     # Write output RAM into txt file
     if select == 3:

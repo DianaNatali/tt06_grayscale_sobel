@@ -5,24 +5,23 @@
 `endif
 
 module spi_core #(
-    parameter WORD_SIZE = "mandatory"
-)(
-    input logic sck_i
-    ,input logic sdi_i
-    ,input logic cs_i
-    ,output logic sdo_o
+        parameter WORD_SIZE = "mandatory"
+    )(
+        input logic sck_i,
+        input logic sdi_i,
+        input logic cs_i,
+        output logic sdo_o,
 
-    ,input logic [WORD_SIZE-1:0] data_tx_i
-    ,output logic [WORD_SIZE-1:0] data_rx_o
-    ,output logic rxtx_done_o
-);
+        input logic [WORD_SIZE-1:0] data_tx_i,
+        output logic [WORD_SIZE-1:0] data_rx_o,
+        output logic rxtx_done_o
+    );
 
     logic nreset_i;
     logic [WORD_SIZE-1:0] sdo_register;
     logic [$clog2(WORD_SIZE):0] counter;
 
     assign nreset_i = ~cs_i; 
-    //assign nreset_i = cs_i; 
     assign sdo_o = sdo_register[WORD_SIZE-1];
 
     always_ff @(negedge sck_i or negedge nreset_i) begin

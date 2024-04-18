@@ -16,9 +16,9 @@ module tt_um_gray_sobel (
 );
 
   assign uio_oe = 8'b10001000; 
-  assign uio_out[2:0] = 'b0;
-  assign uio_out[6:4] = 'b0;
-  assign uo_out[7:0] = 'b0;
+  assign uio_out[2:0] = '0;
+  assign uio_out[7:4] = '0;
+  assign uo_out[7:0] = '0;
 
   logic nreset_async_i;
   assign nreset_async_i = rst_n;
@@ -29,57 +29,51 @@ module tt_um_gray_sobel (
   logic spi_cs_i;
   logic spi_sdo_o;
 
-  assign spi_sck_i = uio_in[0];
-  assign spi_cs_i = uio_in[1];
-  assign spi_sdi_i = uio_in[2];
-  assign uio_out[3] = spi_sdo_o;
-
   logic [MAX_PIXEL_BITS-1:0] input_px;
   logic [MAX_PIXEL_BITS-1:0] output_px;
 
-  logic [1:0] select;
-  logic start_sobel;
-  logic pixel_ready_i;
-  logic pixel_ready_o;
+  logic [1:0] select_i;
+  logic start_sobel_i;
+  logic in_px_rdy;
+  logic out_px_rdy;
+  //logic pixel_ready_o;  //?
 
-  logic clk_i;
-  assign clk_i = clk;
-  
-  assign pixel_ready_i = uio_in[3];
-  assign select = uio_in[5:4];
-  assign start_sobel = uio_in[6];
-  assign uio_out[7] = pixel_ready_o;
+  assign spi_sck_i = uio_in[0];
+  assign spi_cs_i = uio_in[1];
+  assign spi_sdi_i = uio_in[2];
+  assign select_i = uio_in[5:4];
+  assign start_sobel_i = uio_in[6];
+  assign uio_out[3] = spi_sdo_o;
+  //assign uio_out[7] = pixel_ready_o;  //?
 
   logic nreset_i; 
   spi_dep_async_nreset_synchronizer adc_spi_nreset_sync0 (
-    .clk_i(clk_i),
+    .clk_i(clk),
     .async_nreset_i(nreset_async_i),
     .tied_value_i(1'b1),
     .nreset_o(nreset_i)
   );
 
   top_gray_sobel gray_sobel0 (
-    .clk_i(clk_i),
+    .clk_i(clk),
     .nreset_i(nreset_i),
-
-    .select_i(select),
-    .start_sobel_i(start_sobel),
-    .px_rdy_i(pixel_ready_i),
+    .select_i(select_i),
+    .start_sobel_i(start_sobel_i),
+    .px_rdy_i(in_px_rdy),
     .in_pixel_i(input_px),
-
     .out_pixel_o(output_px),
-    .px_rdy_o(pixel_ready_o)
+    .px_rdy_o(out_px_rdy)
   );
 
   spi_control spi0 (
-    .clk_i(clk_i),
+    .clk_i(clk),
     .nreset_i(nreset_i),
-
     .spi_sck_i(spi_sck_i),
     .spi_sdi_i(spi_sdi_i),
     .spi_cs_i(spi_cs_i),
     .spi_sdo_o(spi_sdo_o),
-
+    .px_rdy_o_spi_i(out_px_rdy),
+    .px_rdy_i_spi_o(in_px_rdy),
     .input_px_gray_o(input_px),
     .output_px_sobel_i(output_px)
   );
