@@ -155,6 +155,8 @@ async def tt_um_gray_sobel_bypass(dut):
     # Clock cycle
     cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
+    dut.VGND.value = 0
+    dut.VPWR.value = 1
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
@@ -196,6 +198,8 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
     # Inital
+    dut.VGND = 0
+    dut.VPWR = 1
     dut.ena.value = 0
     dut.ui_in.value = 0
     
@@ -210,7 +214,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     dut.uio_in[0].value = 1
     dut.uio_in[1].value = 0
     
-    N = 2
+    N = 128
     seed = 0xF37571
     stop = 0xD5C501
 

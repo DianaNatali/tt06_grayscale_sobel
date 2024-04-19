@@ -20,6 +20,7 @@
 `define SKY130_FD_SC_HD__A2BB2O_V
 
 `define USE_POWER_PINS
+`define FUNCTIONAL
 /**
  * a2bb2o: 2-input AND, both inputs inverted, into first input, and
  *         2-input AND into 2nd input of 2-input OR.
