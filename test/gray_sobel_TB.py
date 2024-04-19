@@ -8,7 +8,7 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
-select = 2
+select = 1
 
 def get_neighbors(ram_in, index, width):
     neighbors = []
@@ -112,9 +112,9 @@ async def gray_sobel_TB(dut):
         for ind, pixel in enumerate(RAM_input_image):
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 1
+            dut.in_pixel_i.value = int(pixel, 2)
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 0
-            dut.in_pixel_i.value = int(pixel, 2)
             if ind%10000 == 0:
                 print(f'Processed pixels: {ind}')
     else:
@@ -125,16 +125,16 @@ async def gray_sobel_TB(dut):
         for ind, pixel in enumerate(firts_neighbors):
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 1
+            dut.in_pixel_i.value = int(pixel, 2)
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 0
-            dut.in_pixel_i.value = int(pixel, 2)
     
         for i, neighbor_array in enumerate(RAM_neighbors[1:]):
             for ind, pixel in enumerate(neighbor_array[6:]):
                 await FallingEdge(dut.clk_i)
                 dut.px_rdy_i.value = 1
-                await FallingEdge(dut.clk_i)
                 dut.in_pixel_i.value = int(pixel, 2)
+                await FallingEdge(dut.clk_i)
                 dut.px_rdy_i.value = 0
             if i%10000 == 0:
                 print(f'Processed pixels: {i}')
