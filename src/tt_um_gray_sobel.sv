@@ -36,10 +36,8 @@ module tt_um_gray_sobel (
 
     logic [1:0] select_process_i;
     logic start_sobel_i;
-    logic select_input_i;
     assign select_process_i = ui_in[4:3];
     assign start_sobel_i = ui_in[5];
-    assign select_input_i = ui_in[6];
 
     logic LFSR_enable_i;
     logic seed_stop_i;
