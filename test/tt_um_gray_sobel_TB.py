@@ -168,6 +168,7 @@ async def tt_um_gray_sobel_bypass(dut):
     # NOT LFSR
     dut.uio_in[0].value = 0
     dut.uio_in[1].value = 0
+    dut.uio_in[2].value = 0
     
     N = 2
     random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
@@ -257,6 +258,8 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     dut.ui_in[1].value = 1
     await Timer(20)
 
+    dut.uio_in[2].value = 1
+    await Timer(20)
 
 #@cocotb.test()
 #async def tt_um_gray_sobel_TB(dut):

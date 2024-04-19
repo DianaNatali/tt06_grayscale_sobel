@@ -8,11 +8,14 @@ module LFSR(
         input logic clk_i, 
         input logic nreset_i, 
         input logic config_i,
+        
         input logic config_rdy_i, 
         input logic [MAX_PIXEL_BITS-1:0] config_data_i,
-        output logic [MAX_PIXEL_BITS-1:0] lfsr_out,
-        output logic [MAX_PIXEL_BITS-1:0] config_data_o,
         output logic config_done_o,
+        output logic [MAX_PIXEL_BITS-1:0] config_data_o,
+        
+        input logic lfsr_en_i,
+        output logic [MAX_PIXEL_BITS-1:0] lfsr_out,
         output logic lfsr_done
     );
 
@@ -39,8 +42,26 @@ module LFSR(
         end
     end
     
-    logic [MAX_PIXEL_BITS-1:0] lfsr_reg;
-    integer counter;
+    logic r_xnor;
+    logic stop_done;
+    
+    always_ff @(posedge clk_i or negedge nreset_i) begin
+        if(!nreset_i) begin
+            lfsr_out <= '0;
+        end else begin
+           if (lfsr_en_i)
+              lfsr_out <= {lfsr_out[MAX_PIXEL_BITS-2:0], r_xnor};
+           else
+               lfsr_out <= seed_reg;
+        end
+    end
+      
+
+      always_comb begin
+         r_xnor = lfsr_out[12] ^~ lfsr_out[3];
+      end
+
+      assign stop_done =(lfsr_out[MAX_PIXEL_BITS-1:0] == stop_reg) ? 1'b1 : 1'b0;
 
 
 endmodule

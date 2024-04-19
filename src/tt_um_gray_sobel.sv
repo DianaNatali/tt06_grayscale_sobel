@@ -42,8 +42,10 @@ module tt_um_gray_sobel (
 
     logic LFSR_enable_i;
     logic seed_stop_i;
+    logic lfsr_en_i;
     assign LFSR_enable_i = uio_in[0];
     assign seed_stop_i = uio_in[1];
+    assign lfsr_en_i = uio_in[2];
 
     logic nreset_i; 
     
@@ -68,6 +70,14 @@ module tt_um_gray_sobel (
         .nreset_i(nreset_i),
         .async_signal_i(seed_stop_i),
         .signal_o(seed_stop_i_sync)
+    );
+    
+    logic lfsr_en_i_sync;
+    spi_dep_signal_synchronizer sgnl_sync2 (
+        .clk_i(clk),
+        .nreset_i(nreset_i),
+        .async_signal_i(lfsr_en_i),
+        .signal_o(lfsr_en_i_sync)
     );
     
     logic [MAX_PIXEL_BITS-1:0] input_data;
@@ -127,6 +137,7 @@ module tt_um_gray_sobel (
       .config_data_i(input_lfsr_data),
       .config_data_o(output_lfsr_data),
       .config_done_o(out_lfsr_rdy),
+      .lfsr_en_i(lfsr_en_i_sync),
       .lfsr_out(lfsr_out_px),
       .lfsr_done(lfsr_done)
     );
