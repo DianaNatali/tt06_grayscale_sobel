@@ -225,7 +225,7 @@ async def tt_um_gray_sobel_gray(dut):
     await Timer(20)
     dut.ui_in[1].value = 0
     await Timer(20)
-    for i, data in enumerate(RAM_input_image):
+    for i, data in enumerate(random_numbers_array):
         read_data = await spi_transfer_pi(int(data), dut)
         if i > 0:
             print(f"{i} {read_data:x} {emulation_gray(random_numbers_array[i-1]):x}")
