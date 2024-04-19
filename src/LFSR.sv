@@ -70,6 +70,6 @@ module LFSR(
       end
 
       assign stop_done =(lfsr_out[MAX_PIXEL_BITS-1:0] == stop_reg) ? 1'b1 : 1'b0;
-
+    assign lfsr_done = stop_done;
 
 endmodule
