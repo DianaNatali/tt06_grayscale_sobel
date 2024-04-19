@@ -167,10 +167,11 @@ async def tt_um_gray_sobel_bypass(dut):
     
     # NOT LFSR
     dut.uio_in[0].value = 0
+    dut.uio_in[1].value = 0
     
     N = 2
     random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-    await reset_dut(dut, 100)
+    await reset_dut(dut, 20)
 
     await FallingEdge(dut.clk)
     await Timer(20)
@@ -185,7 +186,45 @@ async def tt_um_gray_sobel_bypass(dut):
     await Timer(20)
     dut.ui_in[1].value = 1
     await Timer(20)
+    dut.ui_in[1].value = 1
 
+#Bypass Test For SPI Data!
+@cocotb.test()
+async def tt_um_gray_sobel_lfsr_config(dut):
+    # Clock cycle
+    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
+
+    # Inital
+    dut.ena.value = 0
+    dut.ui_in.value = 0
+    dut.ui_in[3].value = 1
+    dut.ui_in[4].value = 1
+    
+    # Selection = 3
+    dut.ui_in[1].value = 1
+    dut.ui_in[0].value = 1
+    
+    # NOT LFSR
+    dut.uio_in[0].value = 1
+    dut.uio_in[1].value = 0
+    
+    N = 2
+    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+    await reset_dut(dut, 20)
+
+    await FallingEdge(dut.clk)
+    await Timer(20)
+    dut.ui_in[1].value = 0
+    await Timer(20)
+    for i, data in enumerate(random_numbers_array):
+        read_data = await spi_transfer_pi(int(data), dut)
+        if i > 0:
+            #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            assert read_data == random_numbers_array[i-1]
+    
+    await Timer(20)
+    dut.ui_in[1].value = 1
+    await Timer(20)
 #@cocotb.test()
 #async def tt_um_gray_sobel_TB(dut):
 #    # Clock cycle

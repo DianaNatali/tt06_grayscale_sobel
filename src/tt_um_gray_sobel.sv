@@ -82,10 +82,15 @@ module tt_um_gray_sobel (
     logic out_data_rdy;
     logic in_px_rdy;
     logic out_px_rdy;
+    logic in_lfsr_rdy;
+    logic out_lfsr_rdy;
 
     assign input_lfsr_data = LFSR_enable_i_sync ? input_data : 0;      
     assign input_pixel = LFSR_enable_i_sync ? 0 : input_data;
 
+    assign in_lfsr_rdy = LFSR_enable_i_sync ? in_data_rdy : 0;      
+    assign in_px_rdy = LFSR_enable_i_sync ? 0 : in_data_rdy;
+    
     spi_control spi0 (
       .clk_i(clk),
       .nreset_i(nreset_i),
@@ -94,12 +99,10 @@ module tt_um_gray_sobel (
       .spi_cs_i(spi_cs_i),
       .spi_sdo_o(spi_sdo_o),
       .px_rdy_o_spi_i(out_px_rdy),
-      .px_rdy_i_spi_o(in_px_rdy),
+      .px_rdy_i_spi_o(in_data_rdy),
       .input_px_gray_o(input_data),
       .output_px_sobel_i(output_px)
     );
-    
-    
     
     top_gray_sobel gray_sobel0 (
       .clk_i(clk),
@@ -116,8 +119,9 @@ module tt_um_gray_sobel (
     LFSR lfsr0 (
       .clk_i(clk),
       .nreset_i(nreset_i),
-      .seed(seed_reg),
-      .stop_code(stop_code_reg),
+      .config_i(seed_stop_i_sync),
+      .config_rdy_i(in_lfsr_rdy),
+      .config_data_i(input_lfsr_data),
       .lfsr_out(lfsr_out_px),
       .lfsr_done(lfsr_done)
     );
