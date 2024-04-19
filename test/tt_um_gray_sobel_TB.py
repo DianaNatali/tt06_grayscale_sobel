@@ -138,6 +138,7 @@ async def monitor_px_rdy(dut, RAM):
     #     #RAM.append(px_out.value)
     #     px_rdy_high_count += 1
 
+#Bypass Test For SPI Data!
 @cocotb.test()
 async def tt_um_gray_sobel_bypass(dut):
     # Clock cycle
@@ -148,7 +149,9 @@ async def tt_um_gray_sobel_bypass(dut):
     dut.ui_in.value = 0
     dut.ui_in[3].value = 1
     dut.ui_in[4].value = 1
+
     dut.ui_in[1].value = 1
+    dut.ui_in[0].value = 1
     
     # Store processed pixels
     RAM_output_image = []
@@ -169,6 +172,11 @@ async def tt_um_gray_sobel_bypass(dut):
             break
 
     dut.ui_in[1].value = 1
+
+
+
+
+
 
 @cocotb.test()
 async def tt_um_gray_sobel_TB(dut):
