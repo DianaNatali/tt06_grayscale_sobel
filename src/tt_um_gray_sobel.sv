@@ -121,6 +121,7 @@ module tt_um_gray_sobel (
       .lfsr_out(lfsr_out_px),
       .lfsr_done(lfsr_done)
     );
+
     // LFSR lfsr0 (
     //   .clk_i(clk),
     //   .nreset_i(nreset_i),
