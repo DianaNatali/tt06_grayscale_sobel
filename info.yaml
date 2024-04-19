@@ -29,34 +29,34 @@ project:
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
   # Inputs
-  ui[0]: ""
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
-  ui[4]: ""
-  ui[5]: ""
+  ui[0]: "spi_sck_i"
+  ui[1]: "spi_cs_i" 
+  ui[2]: "spi_sdi_i"
+  ui[3]: "select_process_i[0]"
+  ui[4]: "select_process_i[1]"
+  ui[5]: "start_sobel_i"
   ui[6]: ""
   ui[7]: ""
 
   # Outputs
-  uo[0]: ""
-  uo[1]: ""
-  uo[2]: ""
-  uo[3]: ""
-  uo[4]: ""
-  uo[5]: ""
-  uo[6]: ""
-  uo[7]: ""
+  uo[0]: "spi_sdo_o"
+  uo[1]: "lfsr_done"
+  uo[2]: "ena"
+  uo[3]: "output_px[0]"
+  uo[4]: "output_px[1]"
+  uo[5]: "output_px[2]"
+  uo[6]: "output_px[3]"
+  uo[7]: "output_px[4]"
 
   # Bidirectional pins
-  uio[0]: "spi_sck_i"
-  uio[1]: "spi_cs_i"
-  uio[2]: "spi_sdi_i"
-  uio[3]: "spi_sdo_o"
-  uio[4]: "select[0]"
-  uio[5]: "select[1]"
-  uio[6]: "start"
-  uio[7]: "pixel_ready"
+  uio[0]: "LFSR_enable_i"
+  uio[1]: "seed_stop_i"
+  uio[2]: "lfsr_en_i"
+  uio[3]: ""
+  uio[4]: ""
+  uio[5]: ""
+  uio[6]: ""
+  uio[7]: ""
 
 # Do not change!
 yaml_version: 6
