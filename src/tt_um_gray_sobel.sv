@@ -17,7 +17,7 @@ module tt_um_gray_sobel (
   );
 
     assign uio_oe = 8'b00000000; 
-    assign uio_out = '0;
+    assign uio_out = input_pixel[7:0];
     assign uo_out[7:1] = '0;
 
     logic nreset_async_i;
@@ -30,20 +30,13 @@ module tt_um_gray_sobel (
     logic spi_sdo_o;
 
     logic [MAX_PIXEL_BITS-1:0] input_pixel;
-    //logic [MAX_PIXEL_BITS-1:0] lfsr_out_px;
-
     logic [MAX_PIXEL_BITS-1:0] output_px;
-    //logic lfsr_done;
 
     logic [1:0] select_process_i;
     logic start_sobel_i;
     logic in_px_rdy;
     logic out_px_rdy;
-    //logic pixel_ready_o;  //?
 
-    logic [15:0] seed_reg;       
-    logic [15:0] stop_code_reg;  
-    logic [7:0] byte_reg;       
     logic [1:0] state_seed_stop = 2'b00;  
 
     assign spi_sck_i = ui_in[0];
@@ -55,7 +48,7 @@ module tt_um_gray_sobel (
     assign uo_out[0] = spi_sdo_o;
 
     logic nreset_i; 
-    spi_dep_async_nreset_synchronizer adc_spi_nreset_sync0 (
+    spi_dep_async_nreset_synchronizer nreset_sync0 (
       .clk_i(clk),
       .async_nreset_i(nreset_async_i),
       .tied_value_i(1'b1),

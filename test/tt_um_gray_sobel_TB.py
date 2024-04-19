@@ -38,7 +38,7 @@ STREAM_DATA_WIDTH = 24
 clock_period = 1 / ADC_SPI_CLK  # Clock period in seconds
 half_period = clock_period * DUTY_CYCLE
 PIXEL_SIM = 10   # Number of pixels for testing
-select_process = 2
+select_process = 3
 
 def get_neighbors(ram_in, index, width):
     neighbors = []
@@ -172,7 +172,7 @@ async def tt_um_gray_sobel_TB(dut):
     #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
 
     # Start the process to monitor the px_rdy_o signal in parallel
-    await reset_dut(dut, 100)
+    await reset_dut(dut, 1)
 
     if select_process == 2 or  select_process == 3:
         start_sobel = 0
