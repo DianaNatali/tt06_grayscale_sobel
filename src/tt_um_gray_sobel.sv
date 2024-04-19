@@ -18,7 +18,7 @@ module tt_um_gray_sobel (
 
     assign uio_oe = 8'b00000000; 
     assign uio_out = '0;
-    assign uo_out[7:2] = output_px[5:0];
+    assign uo_out[7:3] = output_px[4:0];
 
     logic nreset_async_i;
     assign nreset_async_i = rst_n;
@@ -33,12 +33,13 @@ module tt_um_gray_sobel (
     assign spi_sdi_i = ui_in[2];
     assign uo_out[0] = spi_sdo_o;
 
-
+  //Core Control
     logic [1:0] select_process_i;
     logic start_sobel_i;
     assign select_process_i = ui_in[4:3];
     assign start_sobel_i = ui_in[5];
 
+  //LFSR Control
     logic LFSR_enable_i;
     logic seed_stop_i;
     logic lfsr_en_i;
@@ -47,6 +48,7 @@ module tt_um_gray_sobel (
     assign seed_stop_i = uio_in[1];
     assign lfsr_en_i = uio_in[2];
     assign uo_out[1] = lfsr_done;
+    assign uo_out[2] = ena;
 
     logic nreset_i; 
     

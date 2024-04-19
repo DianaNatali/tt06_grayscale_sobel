@@ -170,7 +170,7 @@ async def tt_um_gray_sobel_bypass(dut):
     dut.uio_in[1].value = 0
     dut.uio_in[2].value = 0
     
-    N = 2
+    N = 4
     random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
     await reset_dut(dut, 20)
 
@@ -189,7 +189,7 @@ async def tt_um_gray_sobel_bypass(dut):
     await Timer(20)
     dut.ui_in[1].value = 1
 
-#Configuration of Seed!
+#Configuration of Seed Stop LFSR!
 @cocotb.test()
 async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     # Clock cycle
@@ -198,10 +198,11 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
-    dut.ui_in[3].value = 1
-    dut.ui_in[4].value = 1
     
     # Selection = 3
+    dut.ui_in[3].value = 0
+    dut.ui_in[4].value = 1
+    
     dut.ui_in[1].value = 1
     dut.ui_in[0].value = 1
     
