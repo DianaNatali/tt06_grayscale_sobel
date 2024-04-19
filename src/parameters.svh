@@ -8,6 +8,7 @@ localparam MAX_GRADIENT_WIDTH = $clog2((1 << PIXEL_WIDTH_OUT)*3);   //Max value 
 localparam MAX_PIXEL_VAL = 1<< PIXEL_WIDTH_OUT;                     //Binarization max value
 localparam MAX_GRADIENT_SUM_WIDTH = $clog2((1 << MAX_GRADIENT_WIDTH)*2);    
 localparam MAX_RESOLUTION_BITS = 24;
+localparam ZERO_PAD_WIDTH = MAX_PIXEL_BITS - PIXEL_WIDTH_OUT;
 
     typedef struct packed {
         logic signed [PIXEL_WIDTH_OUT-1:0] pix0;

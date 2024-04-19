@@ -53,8 +53,6 @@ module tt_um_gray_sobel (
     assign start_sobel_i = ui_in[5];
     assign select_input_i = ui_in[6];
     assign uo_out[0] = spi_sdo_o;
-    // assign uo_out[1] = lfsr_done;
-    //assign uio_out[7] = pixel_ready_o;  //?
 
     logic nreset_i; 
     spi_dep_async_nreset_synchronizer adc_spi_nreset_sync0 (

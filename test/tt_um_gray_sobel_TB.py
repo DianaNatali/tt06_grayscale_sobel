@@ -107,16 +107,9 @@ async def spi_transfer_pi(data, dut):
     data_tx_rpi = 0
     await Timer(3)
 
-    mask_sck = 1 << 0
-    mask_ss = 1 << 1 
-    mask_mosi = 1 << 2
-
-    rpi_ss = 0
-    rpi_sck = 1
-        
-    ui_in_value = (dut.ui_in.value & ~(mask_sck | mask_ss)) | ((rpi_sck << 0) & mask_sck) | ((rpi_ss << 1) & mask_ss)
-    dut.ui_in.value = ui_in_value
-    
+    dut.ui_in[0].value = 1
+    dut.ui_in[1].value = 0
+    dut.ui_in[2].value = 0
     data_tx_rpi = data
 
     #Esperar múltiplos del período de reloj SPI
@@ -125,27 +118,17 @@ async def spi_transfer_pi(data, dut):
 
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
-        rpi_sck = 0
-        rpi_mosi = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
-        
-        ui_in_value = (dut.ui_in.value & ~(mask_sck | mask_mosi)) | ((rpi_sck << 0) & mask_sck) | ((rpi_mosi << 2) & mask_mosi)
-        dut.ui_in.value = ui_in_value
-
+        dut.ui_in[0].value = 0
+        dut.ui_in[2].value = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
         await Timer(RPI_SPI_CLK)
 
-        rpi_sck = 1
-        ui_in_value = (dut.ui_in.value & ~mask_sck) | (rpi_sck << 0)
-        dut.ui_in.value = ui_in_value
-
+        dut.ui_in[0].value = 1
         await Timer(RPI_SPI_CLK)
    
     for _ in range(6):
         await Timer(RPI_SPI_CLK)
     
-    rpi_ss = 1
-    ui_in_value = (dut.ui_in.value & ~mask_ss) | (rpi_ss << 1)
-    dut.ui_in.value = ui_in_value
-
+    dut.ui_in[1].value = 1
 
 # Wait until output file is completely written
 async def wait_file():
