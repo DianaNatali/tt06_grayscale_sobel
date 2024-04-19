@@ -9,7 +9,7 @@ BEHAV?=1
 COCOTB_SIM = 1
 
 PWD=$(shell pwd)
-ifeq ($(BEHAV),1)
+ifeq ($(BEHAV), 1)
 	VERILOG_SOURCES += $(PWD)/../src/parameters.svh
 	VERILOG_SOURCES += $(PWD)/../src/tt_um_gray_sobel.sv
 	VERILOG_SOURCES += $(PWD)/../src/top_gray_sobel.sv
