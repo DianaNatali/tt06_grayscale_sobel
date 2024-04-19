@@ -160,11 +160,15 @@ async def tt_um_gray_sobel_bypass(dut):
     dut.ui_in.value = 0
     dut.ui_in[3].value = 1
     dut.ui_in[4].value = 1
-
+    
+    # Selection = 3
     dut.ui_in[1].value = 1
     dut.ui_in[0].value = 1
     
-    N = 128
+    # NOT LFSR
+    dut.uio_in[0].value = 0
+    
+    N = 2
     random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
     await reset_dut(dut, 100)
 

@@ -28,33 +28,79 @@ module tt_um_gray_sobel (
     logic spi_sdi_i;
     logic spi_cs_i;
     logic spi_sdo_o;
-
-    logic [MAX_PIXEL_BITS-1:0] input_pixel;
-    logic [MAX_PIXEL_BITS-1:0] output_px;
-
-    logic [1:0] select_process_i;
-    logic start_sobel_i;
-    logic in_px_rdy;
-    logic out_px_rdy;
-
-    logic [1:0] state_seed_stop = 2'b00;  
-
     assign spi_sck_i = ui_in[0];
     assign spi_cs_i = ui_in[1];
     assign spi_sdi_i = ui_in[2];
+    assign uo_out[0] = spi_sdo_o;
+
+
+    logic [1:0] select_process_i;
+    logic start_sobel_i;
     assign select_process_i = ui_in[4:3];
     assign start_sobel_i = ui_in[5];
     assign select_input_i = ui_in[6];
-    assign uo_out[0] = spi_sdo_o;
+
+    logic LFSR_enable_i;
+    logic seed_stop_i;
+    assign LFSR_enable_i = uio_in[0];
+    assign seed_stop_i = uio_in[1];
 
     logic nreset_i; 
+    
     spi_dep_async_nreset_synchronizer nreset_sync0 (
       .clk_i(clk),
       .async_nreset_i(nreset_async_i),
       .tied_value_i(1'b1),
       .nreset_o(nreset_i)
     );
+    
+    logic LFSR_enable_i_sync;
+    spi_dep_signal_synchronizer sgnl_sync0 (
+        .clk_i(clk),
+        .nreset_i(nreset_i),
+        .async_signal_i(LFSR_enable_i),
+        .signal_o(LFSR_enable_i_sync)
+    );
 
+    logic seed_stop_i_sync;
+    spi_dep_signal_synchronizer sgnl_sync1 (
+        .clk_i(clk),
+        .nreset_i(nreset_i),
+        .async_signal_i(seed_stop_i),
+        .signal_o(seed_stop_i_sync)
+    );
+    
+    logic [MAX_PIXEL_BITS-1:0] input_data;
+    logic [MAX_PIXEL_BITS-1:0] output_data;
+    
+    logic [MAX_PIXEL_BITS-1:0] input_pixel;
+    logic [MAX_PIXEL_BITS-1:0] output_px;
+    logic [MAX_PIXEL_BITS-1:0] input_lfsr_data;  
+    logic [MAX_PIXEL_BITS-1:0] output_lfsr_data;  
+    
+    logic in_data_rdy;
+    logic out_data_rdy;
+    logic in_px_rdy;
+    logic out_px_rdy;
+
+    assign input_lfsr_data = LFSR_enable_i_sync ? input_data : 0;      
+    assign input_pixel = LFSR_enable_i_sync ? 0 : input_data;
+
+    spi_control spi0 (
+      .clk_i(clk),
+      .nreset_i(nreset_i),
+      .spi_sck_i(spi_sck_i),
+      .spi_sdi_i(spi_sdi_i),
+      .spi_cs_i(spi_cs_i),
+      .spi_sdo_o(spi_sdo_o),
+      .px_rdy_o_spi_i(out_px_rdy),
+      .px_rdy_i_spi_o(in_px_rdy),
+      .input_px_gray_o(input_data),
+      .output_px_sobel_i(output_px)
+    );
+    
+    
+    
     top_gray_sobel gray_sobel0 (
       .clk_i(clk),
       .nreset_i(nreset_i),
@@ -66,19 +112,15 @@ module tt_um_gray_sobel (
       .px_rdy_o(out_px_rdy)
     );
 
-    spi_control spi0 (
+    
+    LFSR lfsr0 (
       .clk_i(clk),
       .nreset_i(nreset_i),
-      .spi_sck_i(spi_sck_i),
-      .spi_sdi_i(spi_sdi_i),
-      .spi_cs_i(spi_cs_i),
-      .spi_sdo_o(spi_sdo_o),
-      .px_rdy_o_spi_i(out_px_rdy),
-      .px_rdy_i_spi_o(in_px_rdy),
-      .input_px_gray_o(input_pixel),
-      .output_px_sobel_i(output_px)
+      .seed(seed_reg),
+      .stop_code(stop_code_reg),
+      .lfsr_out(lfsr_out_px),
+      .lfsr_done(lfsr_done)
     );
-
     // LFSR lfsr0 (
     //   .clk_i(clk),
     //   .nreset_i(nreset_i),
