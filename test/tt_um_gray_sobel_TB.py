@@ -7,6 +7,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
+from gray_sobel import *
 
 ## Inputs
 ## spi_sck_i = ui_in[0]
@@ -114,16 +115,10 @@ async def spi_transfer_pi(data, dut):
     data_rx_rpi = 0
     await Timer(3)
 
-    print('In data:')
-    print(format(int(str(data), 2), "x") + '\n')
-
     dut.ui_in[0].value = 1
     dut.ui_in[1].value = 0
     dut.ui_in[2].value = 0
     data_tx_rpi = swap_bytes(data)
-
-    print('swap:')
-    print(hex(data_tx_rpi) + '\n')
 
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
@@ -223,6 +218,7 @@ async def tt_um_gray_sobel_gray(dut):
     
     N = 4
     random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+
     await reset_dut(dut, 20)
 
     await FallingEdge(dut.clk)
@@ -232,11 +228,8 @@ async def tt_um_gray_sobel_gray(dut):
     for i, data in enumerate(RAM_input_image):
         read_data = await spi_transfer_pi(int(data), dut)
         if i > 0:
-            print(f"{i} {read_data:x}")
-            if i > 10:
-                break
-            # print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
-            # assert read_data == random_numbers_array[i-1]
+            print(f"{i} {read_data:x} {emulation_gray(random_numbers_array[i-1]):x}")
+            #assert read_data == emulation_gray(random_numbers_array[i-1])
     
     await Timer(20)
     dut.ui_in[1].value = 1
