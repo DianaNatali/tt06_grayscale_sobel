@@ -265,9 +265,7 @@ async def tt_um_gray_sobel_sobel(dut):
     dut.uio_in[2].value = 0
     
     N = 4
-    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-
-    pixel_gray_array = [[89, 89, 92, 95, 94, 96, 109, 126, 135], [134, 133, 132], [134, 137, 141], [143, 152, 153]]
+    pixel_gray_array = [89, 89, 92, 95, 94, 96, 109, 126, 135,134, 133, 132,134, 137, 141,143, 152, 153]
 
     pixel_sobel_array = [0, 0, 8, 4, 12, 10 ,16, 8, 10, 12, 12, 12, 12, 12, 10, 6, 8, 4, 12, 14, 10, 4, 6, 6, 4, 10, 18, 12, 16, 10, 8, 8, 4, 14, 14, 20, 16, 8, 2, 4, 14, 24, 52, 40, 20]
 
@@ -277,37 +275,15 @@ async def tt_um_gray_sobel_sobel(dut):
     await Timer(20)
     dut.ui_in[1].value = 0
     await Timer(20)
-    for i, data in enumerate(pixel_gray_array[0]):
+    for i, data in enumerate(pixel_gray_array):
         read_data = await spi_transfer_pi(int(data), dut)
-        print(f"{i} {read_data:x}\n")
+        print(f"{i} {read_data:x} {pixel_sobel_array[i]:x}\n")
         #if i > 0:
         #    print(f"{i} {read_data:x}\n")
             #if i == 8:
                 #print(f"{pixel_sobel_array[0]:x}\n")
                 #assert read_data == emulation_gray(random_numbers_array[i-1])
 
-    for i, data in enumerate(pixel_gray_array[1]):
-        read_data = await spi_transfer_pi(int(data), dut)
-        print(f"{i} {read_data:x}\n")
-        # if i > 0:
-        #     print(f"{i} {read_data:x}\n")
-            #if i == 2:
-                #print(f"{pixel_sobel_array[1]:x}\n")
-                #assert read_data == emulation_gray(random_numbers_array[i-1])
-
-    for i, data in enumerate(pixel_gray_array[2]):
-        read_data = await spi_transfer_pi(int(data), dut)
-        print(f"{i} {read_data:x}\n")
-        # if i > 0:
-        #     print(f"{i} {read_data:x}\n")
-            #if i == 2:
-                #print(f"{pixel_sobel_array[2]:x}\n")
-                #assert read_data == emulation_gray(random_numbers_array[i-1])
-        
-    for i, data in enumerate(pixel_gray_array[3]):
-        read_data = await spi_transfer_pi(int(data), dut)
-        print(f"{i} {read_data:x}\n")
-    
     await Timer(20)
     dut.ui_in[1].value = 1
     await Timer(20)

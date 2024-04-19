@@ -50,7 +50,7 @@ module top_gray_sobel(
     );
 
     assign select_sobel_mux = select_i[0];
-    assign in_px_sobel = select_sobel_mux ? out_px_gray : in_pixel_i[7:0];
+    assign in_px_sobel = select_sobel_mux ?  in_pixel_i[7:0] : out_px_gray;
 
     always_comb begin
         case(select_i)
