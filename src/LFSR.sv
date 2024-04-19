@@ -16,6 +16,7 @@ module LFSR(
         
         input logic lfsr_en_i,
         output logic [MAX_PIXEL_BITS-1:0] lfsr_out,
+        output logic lfsr_rdy_o,
         output logic lfsr_done
     );
 
@@ -48,11 +49,18 @@ module LFSR(
     always_ff @(posedge clk_i or negedge nreset_i) begin
         if(!nreset_i) begin
             lfsr_out <= '0;
+            lfsr_rdy_o <= '0;
         end else begin
-           if (lfsr_en_i)
+            if (lfsr_en_i) begin
               lfsr_out <= {lfsr_out[MAX_PIXEL_BITS-2:0], r_xnor};
-           else
-               lfsr_out <= seed_reg;
+                lfsr_rdy_o <= 1'b1;
+           end else if(stop_done) begin
+                lfsr_out <= lfsr_out;
+                lfsr_rdy_o <= '0;
+           end else begin
+                lfsr_out <= seed_reg;
+                lfsr_rdy_o <= '0;
+           end
         end
     end
       

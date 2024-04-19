@@ -230,7 +230,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
-    dut.ui_in[3].value = 1
+    dut.ui_in[3].value = 0
     dut.ui_in[4].value = 1
     
     # Selection = 3
@@ -259,7 +259,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     await Timer(20)
 
     dut.uio_in[2].value = 1
-    await Timer(20)
+    await Timer(200)
 
 #@cocotb.test()
 #async def tt_um_gray_sobel_TB(dut):
