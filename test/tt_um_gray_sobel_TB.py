@@ -112,10 +112,6 @@ async def spi_transfer_pi(data, dut):
     dut.ui_in[2].value = 0
     data_tx_rpi = data
 
-    #Esperar múltiplos del período de reloj SPI
-    for _ in range(6):
-        await Timer(RPI_SPI_CLK)
-
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
         dut.ui_in[0].value = 0
@@ -128,8 +124,6 @@ async def spi_transfer_pi(data, dut):
     for _ in range(6):
         await Timer(RPI_SPI_CLK)
     
-    dut.ui_in[1].value = 1
-
 # Wait until output file is completely written
 async def wait_file():
     Path('output_image_sobel.txt').exists()
@@ -143,6 +137,38 @@ async def monitor_px_rdy(dut, RAM):
         await FallingEdge(px_rdy_o)
     #     #RAM.append(px_out.value)
     #     px_rdy_high_count += 1
+
+@cocotb.test()
+async def tt_um_gray_sobel_bypass(dut):
+    # Clock cycle
+    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
+
+    # Inital
+    dut.ena.value = 0
+    dut.ui_in.value = 0
+    dut.ui_in[3].value = 1
+    dut.ui_in[4].value = 1
+    dut.ui_in[1].value = 1
+    
+    # Store processed pixels
+    RAM_output_image = []
+      
+    await reset_dut(dut, 100)
+
+    await FallingEdge(dut.clk)
+    await Timer(20)
+    dut.ui_in[1].value = 0
+    await Timer(3)
+    for ind, pixel in enumerate(RAM_input_image):
+        await spi_transfer_pi(int(pixel, 2), dut)
+        
+        if ind%10000 == 0:
+            print(f'Processed pixels: {ind}')
+        
+        if ind > PIXEL_SIM:
+            break
+
+    dut.ui_in[1].value = 1
 
 @cocotb.test()
 async def tt_um_gray_sobel_TB(dut):
@@ -172,16 +198,21 @@ async def tt_um_gray_sobel_TB(dut):
     #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
 
     # Start the process to monitor the px_rdy_o signal in parallel
-    await reset_dut(dut, 1)
+    dut.ui_in[1].value = 1
+    await reset_dut(dut, 100)
 
     if select_process == 2 or  select_process == 3:
+        print(f"Running! select_process = {select_process}")
         start_sobel = 0
         mask_start_sobel = 1 << 5
         ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
         dut.ui_in.value = ui_in_value
 
+        await FallingEdge(dut.clk)
+        await Timer(20)
+        dut.ui_in[1].value = 0
+        await Timer(3)
         for ind, pixel in enumerate(RAM_input_image):
-            await FallingEdge(dut.clk)
             await spi_transfer_pi(int(pixel, 2), dut)
             
             if ind%10000 == 0:
@@ -189,6 +220,8 @@ async def tt_um_gray_sobel_TB(dut):
             
             if ind > PIXEL_SIM:
                 break
+
+        dut.ui_in[1].value = 1
     else:
         start_sobel = 1
         mask_start_sobel = 1 << 5
@@ -212,6 +245,8 @@ async def tt_um_gray_sobel_TB(dut):
             if ind > PIXEL_SIM:
                 break
 
+        await Timer(3)
+        dut.ui_in[1].value = 1
     await FallingEdge(dut.clk)
 
     # Write output RAM into txt file

@@ -140,7 +140,9 @@ module spi_control (
     end
  
     // SPI Slave Core
-    spi_core #(MAX_PIXEL_BITS) spi0 (
+    spi_core #(
+        .WORD_SIZE(MAX_PIXEL_BITS)
+    ) spi0 (
         .sck_i(spi_sck_i),
         .sdi_i(spi_sdi_i),
         .cs_i(spi_cs_i),
