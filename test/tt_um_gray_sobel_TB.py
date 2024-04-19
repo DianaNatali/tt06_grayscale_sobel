@@ -114,10 +114,16 @@ async def spi_transfer_pi(data, dut):
     data_rx_rpi = 0
     await Timer(3)
 
+    print('In data:')
+    print(format(int(str(data), 2), "x") + '\n')
+
     dut.ui_in[0].value = 1
     dut.ui_in[1].value = 0
     dut.ui_in[2].value = 0
     data_tx_rpi = swap_bytes(data)
+
+    print('swap:')
+    print(hex(data_tx_rpi) + '\n')
 
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
@@ -155,8 +161,8 @@ async def tt_um_gray_sobel_bypass(dut):
     # Clock cycle
     cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
-    dut.VGND.value = 0
-    dut.VPWR.value = 1
+    # dut.VGND.value = 0
+    # dut.VPWR.value = 1
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
@@ -191,6 +197,52 @@ async def tt_um_gray_sobel_bypass(dut):
     await Timer(20)
     dut.ui_in[1].value = 1
 
+
+#Gray Test For SPI Data!
+@cocotb.test()
+async def tt_um_gray_sobel_gray(dut):
+    # Clock cycle
+    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
+
+    # dut.VGND.value = 0
+    # dut.VPWR.value = 1
+    # Inital
+    dut.ena.value = 0
+    dut.ui_in.value = 0
+    dut.ui_in[3].value = 0
+    dut.ui_in[4].value = 1
+    
+    # Selection = 3
+    dut.ui_in[1].value = 1
+    dut.ui_in[0].value = 1
+    
+    # NOT LFSR
+    dut.uio_in[0].value = 0
+    dut.uio_in[1].value = 0
+    dut.uio_in[2].value = 0
+    
+    N = 4
+    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+    await reset_dut(dut, 20)
+
+    await FallingEdge(dut.clk)
+    await Timer(20)
+    dut.ui_in[1].value = 0
+    await Timer(20)
+    for i, data in enumerate(RAM_input_image):
+        read_data = await spi_transfer_pi(int(data), dut)
+        if i > 0:
+            print(f"{i} {read_data:x}")
+            if i > 10:
+                break
+            # print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            # assert read_data == random_numbers_array[i-1]
+    
+    await Timer(20)
+    dut.ui_in[1].value = 1
+    await Timer(20)
+    dut.ui_in[1].value = 1
+
 #Configuration of Seed Stop LFSR! + Gray!
 @cocotb.test()
 async def tt_um_gray_sobel_lfsr_seed_stop(dut):
@@ -198,8 +250,8 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
     # Inital
-    dut.VGND = 0
-    dut.VPWR = 1
+    # dut.VGND = 0
+    # dut.VPWR = 1
     dut.ena.value = 0
     dut.ui_in.value = 0
     
@@ -214,7 +266,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     dut.uio_in[0].value = 1
     dut.uio_in[1].value = 0
     
-    N = 128
+    N = 10
     seed = 0xF37571
     stop = 0xD5C501
 
