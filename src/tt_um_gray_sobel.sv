@@ -18,7 +18,7 @@ module tt_um_gray_sobel (
 
     assign uio_oe = 8'b00000000; 
     assign uio_out = '0;
-    assign uo_out[7:1] = input_pixel[6:0];
+    assign uo_out[7:2] = output_px[5:0];
 
     logic nreset_async_i;
     assign nreset_async_i = rst_n;
@@ -43,9 +43,11 @@ module tt_um_gray_sobel (
     logic LFSR_enable_i;
     logic seed_stop_i;
     logic lfsr_en_i;
+    logic lfsr_done;
     assign LFSR_enable_i = uio_in[0];
     assign seed_stop_i = uio_in[1];
     assign lfsr_en_i = uio_in[2];
+    assign uo_out[1] = lfsr_done;
 
     logic nreset_i; 
     
@@ -129,7 +131,6 @@ module tt_um_gray_sobel (
       .out_pixel_o(output_px),
       .px_rdy_o(out_px_rdy)
     );
-
     
     LFSR lfsr0 (
       .clk_i(clk),
@@ -144,56 +145,5 @@ module tt_um_gray_sobel (
       .lfsr_rdy_o(out_lfsr_rdy),
       .lfsr_done(lfsr_done)
     );
-
-    // LFSR lfsr0 (
-    //   .clk_i(clk),
-    //   .nreset_i(nreset_i),
-    //   .seed(seed_reg),
-    //   .stop_code(stop_code_reg),
-    //   .lfsr_out(lfsr_out_px),
-    //   .lfsr_done(lfsr_done)
-    // );
-
-    // always_comb begin
-    //   case(select_input_i)
-    //     1'b0:begin
-    //       input_px_gray_sobel = input_px_o_spi;
-    //     end
-    //     1'b1:begin
-    //       input_px_gray_sobel = lfsr_out_px;
-    //     end
-    //   endcase
-    // end
-
-    // always @(posedge clk or negedge nreset_i) begin
-    //   if (nreset_i) begin
-    //       byte_reg <= 8'b0;       
-    //       state_seed_stop <= 2'b0;           
-    //       seed_reg <= 16'b0;         
-    //       stop_code_reg <= 16'b0;    
-    //   end else begin
-    //       case (state_seed_stop)
-    //           2'b00: begin  
-    //               byte_reg <= uio_in;
-    //               state_seed_stop <= 2'b01;
-    //           end
-    //           2'b01: begin   
-    //               seed_reg <= {byte_reg, uio_in};
-    //               state_seed_stop <= 2'b10;
-    //           end
-    //           2'b10: begin   
-    //               byte_reg <= uio_in;
-    //               state_seed_stop <= 2'b11;
-    //           end
-    //           2'b11: begin   
-    //               stop_code_reg <= {byte_reg, uio_in};
-    //               state_seed_stop <= 2'b11;
-    //           end
-    //           default: begin
-    //             state_seed_stop <= 2'b00;
-    //           end
-    //       endcase
-    //   end
-    // end
 
 endmodule

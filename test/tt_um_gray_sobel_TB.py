@@ -210,18 +210,20 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     dut.uio_in[1].value = 0
     
     N = 2
-    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+    seed = 0xF37571
+    stop = 0xD5C501
+
     await reset_dut(dut, 20)
 
     await FallingEdge(dut.clk)
     await Timer(20)
     dut.ui_in[1].value = 0
     await Timer(20)
-    for i, data in enumerate(random_numbers_array):
-        read_data = await spi_transfer_pi(int(random_numbers_array[0]), dut)
+    for i in range(N):
+        read_data = await spi_transfer_pi(int(seed), dut)
         if i > 0:
             #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
-            assert read_data == random_numbers_array[0]
+            assert read_data == seed
     
     await Timer(20)
     dut.ui_in[1].value = 1
@@ -242,17 +244,15 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     dut.uio_in[1].value = 1
     
     N = 2
-    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-
     await FallingEdge(dut.clk)
     await Timer(20)
     dut.ui_in[1].value = 0
     await Timer(20)
-    for i, data in enumerate(random_numbers_array):
-        read_data = await spi_transfer_pi(int(random_numbers_array[0]), dut)
+    for i in range(N):
+        read_data = await spi_transfer_pi(int(stop), dut)
         if i > 0:
             #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
-            assert read_data == random_numbers_array[0]
+            assert read_data == stop
     
     await Timer(20)
     dut.ui_in[1].value = 1

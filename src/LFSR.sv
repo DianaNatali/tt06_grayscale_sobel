@@ -51,7 +51,7 @@ module LFSR(
             lfsr_out <= '0;
             lfsr_rdy_o <= '0;
         end else begin
-            if (lfsr_en_i) begin
+            if (lfsr_en_i & ~stop_done) begin
               lfsr_out <= {lfsr_out[MAX_PIXEL_BITS-2:0], r_xnor};
                 lfsr_rdy_o <= 1'b1;
            end else if(stop_done) begin
