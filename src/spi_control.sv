@@ -46,69 +46,6 @@ module spi_control (
         .signal_o(ncs_signal)
     );
 
-    typedef enum logic [1:0] {
-        S_IDLE,
-        S_TXRX_INIT,
-        S_TXRX
-    } state_e;
-
-    state_e state, next_state;
-    logic txrx_active;
-
-    always_ff @(posedge clk_i or negedge nreset_i) begin
-        if (!nreset_i)
-            state <= S_IDLE;
-		else
-            state <= next_state;
-	end
-
-    always_comb begin
-        case(state)
-            S_IDLE: begin
-                if(ncs_signal)
-                    next_state = S_TXRX_INIT;
-                else
-                    next_state = S_IDLE;
-            end
-            S_TXRX_INIT: begin
-                if(rxtx_done)
-                    next_state = S_TXRX;
-                else
-                    next_state = S_TXRX_INIT;
-            end
-            S_TXRX: begin
-                if(~ncs_signal)
-                    next_state = S_IDLE;
-                else
-                    next_state = S_TXRX;
-            end
-            default:
-                next_state = S_IDLE;
-        endcase
-    end
-
-    always_ff @(posedge clk_i or negedge nreset_i) begin
-        if(!nreset_i) begin
-            txrx_active <= 1'b0;
-        end else begin
-            case(next_state)
-                S_IDLE: begin
-                    txrx_active <= 1'b0;
-                end
-                S_TXRX_INIT: begin
-                    txrx_active <= 1'b1;
-                end
-                S_TXRX: begin
-                    txrx_active <= 1'b0;
-                end
-                default : begin
-                    txrx_active <= 1'b0;
-                end
-            endcase
-        end
-    end
-
-
     logic rxtx_done_rising;
     assign rxtx_done_rising = rxtx_done & ~rxtx_done_reg;
 

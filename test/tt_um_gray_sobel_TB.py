@@ -189,7 +189,7 @@ async def tt_um_gray_sobel_bypass(dut):
     await Timer(20)
     dut.ui_in[1].value = 1
 
-#Configuration of Seed Stop LFSR!
+#Configuration of Seed Stop LFSR! + Gray!
 @cocotb.test()
 async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     # Clock cycle

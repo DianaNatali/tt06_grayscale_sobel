@@ -21,7 +21,7 @@ ifeq ($(BEHAV), 1)
 	VERILOG_SOURCES += $(PWD)/../src/spi_control.sv
 	VERILOG_SOURCES += $(PWD)/../src/LFSR.sv
 else
-	VERILOG_SOURCES += $(PWD)/../src/apr/tt_um_gray_sobel.nl.v
+	VERILOG_SOURCES += $(PWD)/../src/apr/tt_um_gray_sobel.v
 	VERILOG_SOURCES += $(PWD)/../src/pdk_verilog/primitives.v
 	VERILOG_SOURCES += $(PWD)/../src/pdk_verilog/sky130_fd_sc_hd.v
 endif
@@ -33,7 +33,7 @@ TOPLEVEL = tt_um_gray_sobel
 # MODULE is the basename of the Python test file
 # MODULE = gray_sobel_TB
 MODULE = tt_um_gray_sobel_TB
-
+COMPILE_ARGS += -PUSE_POWER_PINS=1
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
 

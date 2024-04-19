@@ -19,6 +19,7 @@
 `ifndef SKY130_EF_SC_HD__DECAP_12_V
 `define SKY130_EF_SC_HD__DECAP_12_V
 
+`define USE_POWER_PINS
 /**
  * decap: Decoupling capacitance filler.
  *
