@@ -55,6 +55,11 @@ else:
         for j in range(0,320):
             pixel = input_image[i][j]
             RAM_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
+
+
+with open('monarch_320x240.txt', 'w') as f:
+    for pixel in RAM_input_image:
+        f.write(f"{int(str(pixel), 2)}\n")
 #----------------------------------------cocotb test bench----------------------------------------------
 # Reset
 async def reset_dut(dut, duration_ns):

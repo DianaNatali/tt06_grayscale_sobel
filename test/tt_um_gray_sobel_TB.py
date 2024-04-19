@@ -122,7 +122,6 @@ async def spi_transfer_pi(data, dut):
 
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
-        n = int(i/8)
         dut.ui_in[0].value = 0
         dut.ui_in[2].value = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
         await Timer(RPI_SPI_CLK)
@@ -161,10 +160,11 @@ async def tt_um_gray_sobel_bypass(dut):
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
+
+    # Selection = 3
     dut.ui_in[3].value = 1
     dut.ui_in[4].value = 1
     
-    # Selection = 3
     dut.ui_in[1].value = 1
     dut.ui_in[0].value = 1
     
@@ -204,10 +204,11 @@ async def tt_um_gray_sobel_gray(dut):
     # Inital
     dut.ena.value = 0
     dut.ui_in.value = 0
+
+    # Selection = 3
     dut.ui_in[3].value = 0
     dut.ui_in[4].value = 1
-    
-    # Selection = 3
+
     dut.ui_in[1].value = 1
     dut.ui_in[0].value = 1
     
@@ -229,12 +230,89 @@ async def tt_um_gray_sobel_gray(dut):
         read_data = await spi_transfer_pi(int(data), dut)
         if i > 0:
             print(f"{i} {read_data:x} {emulation_gray(random_numbers_array[i-1]):x}")
-            #assert read_data == emulation_gray(random_numbers_array[i-1])
+            assert read_data == emulation_gray(random_numbers_array[i-1])
     
     await Timer(20)
     dut.ui_in[1].value = 1
     await Timer(20)
     dut.ui_in[1].value = 1
+
+
+#Sobel Test For SPI Data!
+@cocotb.test()
+async def tt_um_gray_sobel_sobel(dut):
+    # Clock cycle
+    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
+
+    # dut.VGND.value = 0
+    # dut.VPWR.value = 1
+    # Inital
+    dut.ena.value = 0
+    dut.ui_in.value = 0
+
+    # Selection = 3
+    dut.ui_in[3].value = 1
+    dut.ui_in[4].value = 0
+    
+    dut.ui_in[1].value = 1
+    dut.ui_in[0].value = 1
+    
+    dut.ui_in[5].value = 1
+    
+    # NOT LFSR
+    dut.uio_in[0].value = 0
+    dut.uio_in[1].value = 0
+    dut.uio_in[2].value = 0
+    
+    N = 4
+    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+
+    pixel_gray_array = [[89, 89, 92, 95, 94, 96, 109, 126, 135], [134, 133, 132], [134, 137, 141], [143, 152, 153]]
+
+    pixel_sobel_array = [0, 0, 8, 4, 12, 10 ,16, 8, 10, 12, 12, 12, 12, 12, 10, 6, 8, 4, 12, 14, 10, 4, 6, 6, 4, 10, 18, 12, 16, 10, 8, 8, 4, 14, 14, 20, 16, 8, 2, 4, 14, 24, 52, 40, 20]
+
+    await reset_dut(dut, 20)
+
+    await FallingEdge(dut.clk)
+    await Timer(20)
+    dut.ui_in[1].value = 0
+    await Timer(20)
+    for i, data in enumerate(pixel_gray_array[0]):
+        read_data = await spi_transfer_pi(int(data), dut)
+        print(f"{i} {read_data:x}\n")
+        #if i > 0:
+        #    print(f"{i} {read_data:x}\n")
+            #if i == 8:
+                #print(f"{pixel_sobel_array[0]:x}\n")
+                #assert read_data == emulation_gray(random_numbers_array[i-1])
+
+    for i, data in enumerate(pixel_gray_array[1]):
+        read_data = await spi_transfer_pi(int(data), dut)
+        print(f"{i} {read_data:x}\n")
+        # if i > 0:
+        #     print(f"{i} {read_data:x}\n")
+            #if i == 2:
+                #print(f"{pixel_sobel_array[1]:x}\n")
+                #assert read_data == emulation_gray(random_numbers_array[i-1])
+
+    for i, data in enumerate(pixel_gray_array[2]):
+        read_data = await spi_transfer_pi(int(data), dut)
+        print(f"{i} {read_data:x}\n")
+        # if i > 0:
+        #     print(f"{i} {read_data:x}\n")
+            #if i == 2:
+                #print(f"{pixel_sobel_array[2]:x}\n")
+                #assert read_data == emulation_gray(random_numbers_array[i-1])
+        
+    for i, data in enumerate(pixel_gray_array[3]):
+        read_data = await spi_transfer_pi(int(data), dut)
+        print(f"{i} {read_data:x}\n")
+    
+    await Timer(20)
+    dut.ui_in[1].value = 1
+    await Timer(20)
+    dut.ui_in[1].value = 1
+
 
 #Configuration of Seed Stop LFSR! + Gray!
 @cocotb.test()
