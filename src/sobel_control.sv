@@ -69,21 +69,18 @@ module sobel_control (
         if (!nreset_i)begin
             counter_sobel <= 'b0;
             counter_pixels <= 'b0;
-            out_sobel <= 'b0;
             px_ready <= 'b0;
             sobel_pixels <= 'b0;
         end else begin
             case (next)
                 IDLE: begin
                     px_ready <= 'b0;
-                    out_sobel <= 'b0;
                     counter_pixels <= 'b0;
                     counter_sobel <= 'b0;
                 end
                 FIRST_MATRIX: begin
                     px_ready <= 'b0;
                     if (px_rdy_i) begin
-                        out_sobel <= '0;
                         case(counter_sobel)
                             0: sobel_pixels.vector0.pix0 <= in_px_sobel_i;
                             1: sobel_pixels.vector0.pix1 <= in_px_sobel_i;
@@ -100,15 +97,12 @@ module sobel_control (
                             counter_pixels <= counter_pixels + 1;
                             counter_sobel <= 'b0;
                             px_ready <= 'b1;
-                            out_sobel <= out_sobel_core;
-                            //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
                         end
                     end
                 end
                 NEXT_MATRIX: begin
                     px_ready <= 'b0;
                     if (px_rdy_i) begin
-                        out_sobel <= '0;
                         case(counter_sobel)
                             0: begin 
                                 sobel_pixels.vector0 <= sobel_pixels.vector1;
@@ -127,14 +121,11 @@ module sobel_control (
                             counter_pixels <= counter_pixels + 1;
                             counter_sobel <= 'b0;
                             px_ready <= 'b1;
-                            out_sobel <= out_sobel_core;
-                            //out_sobel <= (out_sobel_core < SOBEL_THRESHOLD)? MIN_PIXEL_VAL : MAX_PIXEL_VAL-1;  //Binarization
                         end
                     end
                 end
                 default: begin
                     px_ready <= 'b0;
-                    out_sobel <= 'b0;
                     counter_pixels <= 'b0;
                     counter_sobel <= 'b0;
                 end
@@ -142,8 +133,18 @@ module sobel_control (
         end
     end
 
-
+    always_ff @(posedge clk_i or negedge nreset_i)begin
+        if (!nreset_i)begin
+            out_sobel <= '0;
+            px_rdy_o <= '0;
+        end else begin
+            px_rdy_o <= '0;
+            if(px_ready) begin
+                out_sobel <= out_sobel_core;
+                px_rdy_o <= px_ready;
+            end
+        end
+    end
     assign  out_px_sobel_o = out_sobel;
-    assign  px_rdy_o = px_ready; 
 
 endmodule
