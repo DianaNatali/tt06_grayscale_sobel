@@ -8,6 +8,7 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
+select = 3
 
 def get_neighbors(ram_in, index, width):
     neighbors = []
@@ -35,37 +36,25 @@ def get_neighbor_array(image, ram_input):
             neighbor_count += 1
     return ram_neighbors
 
-select = 2
-
 #-------------------------------Convert RGB image to grayscale------------------------------------------
 img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
 img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
 
-red_channel = img_original[:,:,2]
-green_channel = img_original[:,:,1]
-blue_channel = img_original[:,:,0]
-
-red_channel_5bit = (red_channel >> 3) & 0x1F
-green_channel_6bit = (green_channel >> 2) & 0x3F
-blue_channel_5bit = (blue_channel >> 3) & 0x1F
-
-img_rgb565 = np.dstack((red_channel_5bit, green_channel_6bit, blue_channel_5bit))
-
 RAM_input_image = []
 
 if select == 1:
-    gray_opencv = cv2.cvtColor(img_rgb565, cv2.COLOR_RGB2GRAY) 
+    gray_opencv = cv2.cvtColor(img_original, cv2.COLOR_RGB2GRAY) 
     input_image = gray_opencv
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
             RAM_input_image.append(f'{pixel:08b}')
 else:
-    input_image = img_rgb565
+    input_image = img_original
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f"{pixel[0]:05b}{pixel[1]:06b}{pixel[2]:05b}")
+            RAM_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
 #----------------------------------------cocotb test bench----------------------------------------------
 # Reset
 async def reset_dut(dut, duration_ns):
@@ -175,9 +164,9 @@ async def gray_sobel_TB(dut):
         encode_image = []
         for ind, pixel in enumerate(array_out):
             value = int(pixel, 2)
-            red = ((value >> 11) & 0x1F)
-            green = ((value >> 5) & 0x3F)
-            blue = (value & 0x1F)
+            red = ((value >> 16) & 0xFF)
+            green = ((value >> 8) & 0xFF)
+            blue = (value & 0xFF)
             row = [red, green, blue]
             encode_image.append(row)
         array_out_reshape = np.reshape(encode_image, (240, 320, 3))        

@@ -24,6 +24,7 @@ project:
     - "spi_core.sv"
     - "spi_control.sv"
     - "async_nreset_synchronizers.sv"
+    - 'LFSR.sv'
     
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:

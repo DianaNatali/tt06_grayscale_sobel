@@ -30,8 +30,8 @@ module gray_scale_core(
         end
     end
 
-    assign  red = {3'b0, in_px_rgb_i[MAX_PIXEL_BITS-1:11]} <<3;
-    assign  green = {2'b0, in_px_rgb_i[10:5]} <<2;
-    assign  blue = {3'b0, in_px_rgb_i[4:0]} <<3;
+    assign  red = in_px_rgb_i[MAX_PIXEL_BITS-1:16];
+    assign  green = in_px_rgb_i[15:8];
+    assign  blue = in_px_rgb_i[7:0];
 
 endmodule

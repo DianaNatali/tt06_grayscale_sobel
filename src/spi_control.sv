@@ -135,8 +135,6 @@ module spi_control (
         end else begin
             if(px_rdy_o_spi_i)begin
                 data_tx <= output_px_sobel_i;
-            end else begin
-                data_tx <= '0;
             end
         end
     end
@@ -147,8 +145,8 @@ module spi_control (
         .sdi_i(spi_sdi_i),
         .cs_i(spi_cs_i),
         .sdo_o(spi_sdo_o),
-        .data_tx_i({data_tx[7:0], data_tx[15:8]}),
-        .data_rx_o({spi_data_rx[7:0], spi_data_rx[15:8]}),
+        .data_tx_i({data_tx[7:0], data_tx[15:8], data_tx[23:16]}),
+        .data_rx_o({spi_data_rx[7:0], spi_data_rx[15:8], spi_data_rx[23:16]}),
         .rxtx_done_o(spi_rxtx_done)
     );
 

@@ -19,6 +19,7 @@ VERILOG_SOURCES += $(PWD)/../src/gray_scale_core.sv
 VERILOG_SOURCES += $(PWD)/../src/async_nreset_synchronizers.sv
 VERILOG_SOURCES += $(PWD)/../src/spi_core.sv
 VERILOG_SOURCES += $(PWD)/../src/spi_control.sv
+VERILOG_SOURCES += $(PWD)/../src/LFSR.sv
 
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file

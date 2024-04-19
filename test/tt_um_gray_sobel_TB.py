@@ -9,14 +9,15 @@ from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
 ## Inputs
-## spi_sck_i = uio_in[0]
-## spi_cs_i = uio_in[1]
-## spi_sdi_i = uio_in[2]
-## select_i = uio_in[5:4]
-## start_sobel_i = uio_in[6];
+## spi_sck_i = ui_in[0]
+## spi_cs_i = ui_in[1]
+## spi_sdi_i = ui_in[2]
+## select_i = ui_in[4:3]
+## start_sobel_i = ui_in[5];
+## select_input = ui_in[6];
 
 ## Outputs
-## uio_out[3] = spi_sdo_o;
+## uo_out[3] = spi_sdo_o;
 
 ## Select process
 ## 00 -> Gray + sobel
@@ -24,16 +25,20 @@ from matplotlib import pyplot as plt
 ## 10 -> Only gray
 ## 11 -> Bypass
 
+## Select input
+## 0 -> SPI pixel
+## 1 -> LFSR pixel
+
+
 # Parameters
 RPI_SPI_CLK = 66/2
 ADC_SPI_CLK = 50
 DUTY_CYCLE = 0.5
-STREAM_DATA_WIDTH = 16
+STREAM_DATA_WIDTH = 24
 clock_period = 1 / ADC_SPI_CLK  # Clock period in seconds
 half_period = clock_period * DUTY_CYCLE
 PIXEL_SIM = 10   # Number of pixels for testing
-
-px_rdy_high_count = 0
+select_process = 2
 
 def get_neighbors(ram_in, index, width):
     neighbors = []
@@ -49,11 +54,8 @@ def get_neighbors(ram_in, index, width):
 
 def get_neighbor_array(image, ram_input):
     height, width, _ = image.shape
-
     ram_neighbors = []
-
     neighbor_count = 0 
-    
     for y in range(1, height - 1):
         for x in range(1, width - 1):
             i = y * width + x
@@ -62,36 +64,26 @@ def get_neighbor_array(image, ram_input):
             neighbor_count += 1
     return ram_neighbors
 
-select = 2
 
 #-------------------------------Convert RGB image to grayscale------------------------------------------
 img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
 img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
-red_channel = img_original[:,:,2]
-green_channel = img_original[:,:,1]
-blue_channel = img_original[:,:,0]
-
-red_channel_5bit = (red_channel >> 3) & 0x1F
-green_channel_6bit = (green_channel >> 2) & 0x3F
-blue_channel_5bit = (blue_channel >> 3) & 0x1F
-
-img_rgb565 = np.dstack((red_channel_5bit, green_channel_6bit, blue_channel_5bit))
 
 RAM_input_image = []
 
-if select == 1:
-    gray_opencv = cv2.cvtColor(img_rgb565, cv2.COLOR_RGB2GRAY) 
+if select_process == 1:
+    gray_opencv = cv2.cvtColor(img_original, cv2.COLOR_RGB2GRAY) 
     input_image = gray_opencv
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
             RAM_input_image.append(f'{pixel:08b}')
 else:
-    input_image = img_rgb565
+    input_image = img_original
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f"{pixel[0]:05b}{pixel[1]:06b}{pixel[2]:05b}")
+            RAM_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
 #----------------------------------------cocotb test bench----------------------------------------------
 #reset
 async def reset_dut(dut, duration_ns):
@@ -110,8 +102,6 @@ async def clock_generator(dut):
         dut.clk <= 1
         await Timer(half_period, units="ns")
 
-
-
 #spi transfer data 
 async def spi_transfer_pi(data, dut):
     data_tx_rpi = 0
@@ -124,8 +114,8 @@ async def spi_transfer_pi(data, dut):
     rpi_ss = 0
     rpi_sck = 1
         
-    uio_in_value = (dut.uio_in.value & ~(mask_sck | mask_ss)) | ((rpi_sck << 0) & mask_sck) | ((rpi_ss << 1) & mask_ss)
-    dut.uio_in.value = uio_in_value
+    ui_in_value = (dut.ui_in.value & ~(mask_sck | mask_ss)) | ((rpi_sck << 0) & mask_sck) | ((rpi_ss << 1) & mask_ss)
+    dut.ui_in.value = ui_in_value
     
     data_tx_rpi = data
 
@@ -138,14 +128,14 @@ async def spi_transfer_pi(data, dut):
         rpi_sck = 0
         rpi_mosi = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
         
-        uio_in_value = (dut.uio_in.value & ~(mask_sck | mask_mosi)) | ((rpi_sck << 0) & mask_sck) | ((rpi_mosi << 2) & mask_mosi)
-        dut.uio_in.value = uio_in_value
+        ui_in_value = (dut.ui_in.value & ~(mask_sck | mask_mosi)) | ((rpi_sck << 0) & mask_sck) | ((rpi_mosi << 2) & mask_mosi)
+        dut.ui_in.value = ui_in_value
 
         await Timer(RPI_SPI_CLK)
 
         rpi_sck = 1
-        uio_in_value = (dut.uio_in.value & ~mask_sck) | (rpi_sck << 0)
-        dut.uio_in.value = uio_in_value
+        ui_in_value = (dut.ui_in.value & ~mask_sck) | (rpi_sck << 0)
+        dut.ui_in.value = ui_in_value
 
         await Timer(RPI_SPI_CLK)
    
@@ -153,8 +143,8 @@ async def spi_transfer_pi(data, dut):
         await Timer(RPI_SPI_CLK)
     
     rpi_ss = 1
-    uio_in_value = (dut.uio_in.value & ~mask_ss) | (rpi_ss << 1)
-    dut.uio_in.value = uio_in_value
+    ui_in_value = (dut.ui_in.value & ~mask_ss) | (rpi_ss << 1)
+    dut.ui_in.value = ui_in_value
 
 
 # Wait until output file is completely written
@@ -163,7 +153,6 @@ async def wait_file():
 
 # Parallel check of px_rdy_o and px_out
 async def monitor_px_rdy(dut, RAM):
-    global px_rdy_high_count
     mask_7 = 1 << 7
     px_rdy_o = (dut.uio_out.value.integer & mask_7) >> 7
     while True:
@@ -174,13 +163,12 @@ async def monitor_px_rdy(dut, RAM):
 
 @cocotb.test()
 async def tt_um_gray_sobel_TB(dut):
-    global px_rdy_high_count
     # Clock cycle
     cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
 
     # Inital
     dut.ena.value = 0
-    dut.uio_in.value = 0
+    dut.ui_in.value = 0
     rpi_mosi = 0
     rpi_ss = 1 
     rpi_sck = 1
@@ -188,13 +176,14 @@ async def tt_um_gray_sobel_TB(dut):
     # Store processed pixels
     RAM_output_image = []
       
-    select_bin = "{:02b}".format(select) 
+    select_bin = "{:02b}".format(select_process) 
     dut.ena.value = 1
     start_sobel = 0
-    px_rdy_i = 0
+    select_input = 1
+    dut.uio_in.value = 0
 
-    uio_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(px_rdy_i) << 3) | (int(select_bin[1]) << 4) | (int(select_bin[0]) << 5) | (int(start_sobel) << 6)
-    dut.uio_in.value = uio_in_value
+    ui_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[1]) << 3) | (int(select_bin[0]) << 4) | (int(start_sobel) << 5) | (int(select_input) << 6)
+    dut.ui_in.value = ui_in_value
 
     # Get px_rdy_o signal DUT (Device Under Test)
     #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
@@ -202,11 +191,11 @@ async def tt_um_gray_sobel_TB(dut):
     # Start the process to monitor the px_rdy_o signal in parallel
     await reset_dut(dut, 100)
 
-    if select == 2 or  select == 3:
+    if select_process == 2 or  select_process == 3:
         start_sobel = 0
-        mask_start_sobel = 1 << 6
-        uio_in_value = (dut.uio_in.value & ~mask_start_sobel) | (start_sobel << 6)
-        dut.uio_in.value = uio_in_value
+        mask_start_sobel = 1 << 5
+        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
+        dut.ui_in.value = ui_in_value
 
         for ind, pixel in enumerate(RAM_input_image):
             await FallingEdge(dut.clk)
@@ -219,9 +208,9 @@ async def tt_um_gray_sobel_TB(dut):
                 break
     else:
         start_sobel = 1
-        mask_start_sobel = 1 << 6
-        uio_in_value = (dut.uio_in.value & ~mask_start_sobel) | (start_sobel << 6)
-        dut.uio_in.value = uio_in_value
+        mask_start_sobel = 1 << 5
+        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
+        dut.ui_in.value = ui_in_value
 
         RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
         firts_neighbors = RAM_neighbors[0]
@@ -243,7 +232,7 @@ async def tt_um_gray_sobel_TB(dut):
     await FallingEdge(dut.clk)
 
     # Write output RAM into txt file
-    if select == 3:
+    if select_process == 3:
         with open('output_image.txt', 'w') as file_out:
             for pixel in RAM_output_image:
                 file_out.write(f"{pixel}\n")

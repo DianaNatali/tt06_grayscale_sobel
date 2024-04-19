@@ -1,7 +1,7 @@
 `ifndef __CONSTANTS_SOBEL__
 `define __CONSTANTS_SOBEL__
 
-localparam MAX_PIXEL_BITS = 16;              
+localparam MAX_PIXEL_BITS = 24;              
 localparam PIXEL_WIDTH_OUT = 8;
 localparam SOBEL_COUNTER_MAX_BITS = 3;                              //Counter for 3x3 matrix of pixels to convolve with kernel
 localparam MAX_GRADIENT_WIDTH = $clog2((1 << PIXEL_WIDTH_OUT)*3);   //Max value of gradient could be a sum of three max values of 2^(PIXEL WIDTH) bits
