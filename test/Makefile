@@ -5,7 +5,7 @@ SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 COCOTB_HDL_TIMEUNIT = "1ns"
 COCOTB_HDL_TIMEPRECISION = "10ps"
-BEHAV ?= 1
+BEHAV?=1
 COCOTB_SIM = 1
 
 PWD=$(shell pwd)

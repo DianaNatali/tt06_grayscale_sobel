@@ -103,27 +103,38 @@ async def clock_generator(dut):
         await Timer(half_period, units="ns")
 
 #spi transfer data 
+def swap_bytes(data):
+    byte3 = (data >> 16) & 0xFF
+    byte2 = (data >> 8) & 0xFF
+    byte1 = data & 0xFF
+    return (byte1 << 16) | (byte2 << 8) | byte3
+
 async def spi_transfer_pi(data, dut):
     data_tx_rpi = 0
+    data_rx_rpi = 0
     await Timer(3)
 
     dut.ui_in[0].value = 1
     dut.ui_in[1].value = 0
     dut.ui_in[2].value = 0
-    data_tx_rpi = data
+    data_tx_rpi = swap_bytes(data)
 
      # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
+        n = int(i/8)
         dut.ui_in[0].value = 0
         dut.ui_in[2].value = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
         await Timer(RPI_SPI_CLK)
-
+        read_bit = int(dut.uo_out[0].value) 
+        data_rx_rpi = int(read_bit << (STREAM_DATA_WIDTH - 1 - i)) + data_rx_rpi 
         dut.ui_in[0].value = 1
         await Timer(RPI_SPI_CLK)
    
     for _ in range(6):
         await Timer(RPI_SPI_CLK)
-    
+
+    return swap_bytes(data_rx_rpi)
+ 
 # Wait until output file is completely written
 async def wait_file():
     Path('output_image_sobel.txt').exists()
@@ -153,120 +164,114 @@ async def tt_um_gray_sobel_bypass(dut):
     dut.ui_in[1].value = 1
     dut.ui_in[0].value = 1
     
-    # Store processed pixels
-    RAM_output_image = []
-      
+    N = 128
+    random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
     await reset_dut(dut, 100)
 
     await FallingEdge(dut.clk)
     await Timer(20)
     dut.ui_in[1].value = 0
-    await Timer(3)
-    for ind, pixel in enumerate(RAM_input_image):
-        await spi_transfer_pi(int(pixel, 2), dut)
-        
-        if ind%10000 == 0:
-            print(f'Processed pixels: {ind}')
-        
-        if ind > PIXEL_SIM:
-            break
-
+    await Timer(20)
+    for i, data in enumerate(random_numbers_array):
+        read_data = await spi_transfer_pi(int(data), dut)
+        if i > 0:
+            #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            assert read_data == random_numbers_array[i-1]
+    
+    await Timer(20)
     dut.ui_in[1].value = 1
+    await Timer(20)
 
-
-
-
-
-
-@cocotb.test()
-async def tt_um_gray_sobel_TB(dut):
-    # Clock cycle
-    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
-
-    # Inital
-    dut.ena.value = 0
-    dut.ui_in.value = 0
-    rpi_mosi = 0
-    rpi_ss = 1 
-    rpi_sck = 1
-
-    # Store processed pixels
-    RAM_output_image = []
-      
-    select_bin = "{:02b}".format(select_process) 
-    dut.ena.value = 1
-    start_sobel = 0
-    select_input = 1
-    dut.uio_in.value = 0
-
-    ui_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[1]) << 3) | (int(select_bin[0]) << 4) | (int(start_sobel) << 5) | (int(select_input) << 6)
-    dut.ui_in.value = ui_in_value
-
-    # Get px_rdy_o signal DUT (Device Under Test)
-    #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
-
-    # Start the process to monitor the px_rdy_o signal in parallel
-    dut.ui_in[1].value = 1
-    await reset_dut(dut, 100)
-
-    if select_process == 2 or  select_process == 3:
-        print(f"Running! select_process = {select_process}")
-        start_sobel = 0
-        mask_start_sobel = 1 << 5
-        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
-        dut.ui_in.value = ui_in_value
-
-        await FallingEdge(dut.clk)
-        await Timer(20)
-        dut.ui_in[1].value = 0
-        await Timer(3)
-        for ind, pixel in enumerate(RAM_input_image):
-            await spi_transfer_pi(int(pixel, 2), dut)
-            
-            if ind%10000 == 0:
-                print(f'Processed pixels: {ind}')
-            
-            if ind > PIXEL_SIM:
-                break
-
-        dut.ui_in[1].value = 1
-    else:
-        start_sobel = 1
-        mask_start_sobel = 1 << 5
-        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
-        dut.ui_in.value = ui_in_value
-
-        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
-        firts_neighbors = RAM_neighbors[0]
-
-        for ind, pixel in enumerate(firts_neighbors):
-            await FallingEdge(dut.clk)
-            await spi_transfer_pi(int(pixel, 2), dut)
-
-        for i, neighbor_array in enumerate(RAM_neighbors[1:]):
-            for ind, pixel in enumerate(neighbor_array[6:]):
-                await FallingEdge(dut.clk)
-                await spi_transfer_pi(int(pixel, 2), dut)
-            if i%10000 == 0:
-                print(f'Processed pixels: {i}')
-
-            if ind > PIXEL_SIM:
-                break
-
-        await Timer(3)
-        dut.ui_in[1].value = 1
-    await FallingEdge(dut.clk)
-
-    # Write output RAM into txt file
-    if select_process == 3:
-        with open('output_image.txt', 'w') as file_out:
-            for pixel in RAM_output_image:
-                file_out.write(f"{pixel}\n")
-
-    else:
-        with open('output_image.txt', 'w') as file_out:
-            for pixel in RAM_output_image:
-                file_out.write(f"{int(str(pixel), 2)}\n")
-
-    # ############### Read test bench output ####################
-    await wait_file() # Wait until output file is completely written
+#@cocotb.test()
+#async def tt_um_gray_sobel_TB(dut):
+#    # Clock cycle
+#    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
+#
+#    # Inital
+#    dut.ena.value = 0
+#    dut.ui_in.value = 0
+#    rpi_mosi = 0
+#    rpi_ss = 1 
+#    rpi_sck = 1
+#
+#    # Store processed pixels
+#    RAM_output_image = []
+#      
+#    select_bin = "{:02b}".format(select_process) 
+#    dut.ena.value = 1
+#    start_sobel = 0
+#    select_input = 1
+#    dut.uio_in.value = 0
+#
+#    ui_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[1]) << 3) | (int(select_bin[0]) << 4) | (int(start_sobel) << 5) | (int(select_input) << 6)
+#    dut.ui_in.value = ui_in_value
+#
+#    # Get px_rdy_o signal DUT (Device Under Test)
+#    #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
+#
+#    # Start the process to monitor the px_rdy_o signal in parallel
+#    dut.ui_in[1].value = 1
+#    await reset_dut(dut, 100)
+#
+#    if select_process == 2 or  select_process == 3:
+#        print(f"Running! select_process = {select_process}")
+#        start_sobel = 0
+#        mask_start_sobel = 1 << 5
+#        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
+#        dut.ui_in.value = ui_in_value
+#
+#        await FallingEdge(dut.clk)
+#        await Timer(20)
+#        dut.ui_in[1].value = 0
+#        await Timer(3)
+#        for ind, pixel in enumerate(RAM_input_image):
+#            await spi_transfer_pi(int(pixel, 2), dut)
+#            
+#            if ind%10000 == 0:
+#                print(f'Processed pixels: {ind}')
+#            
+#            if ind > PIXEL_SIM:
+#                break
+#
+#        dut.ui_in[1].value = 1
+#    else:
+#        start_sobel = 1
+#        mask_start_sobel = 1 << 5
+#        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
+#        dut.ui_in.value = ui_in_value
+#
+#        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
+#        firts_neighbors = RAM_neighbors[0]
+#
+#        for ind, pixel in enumerate(firts_neighbors):
+#            await FallingEdge(dut.clk)
+#            await spi_transfer_pi(int(pixel, 2), dut)
+#
+#        for i, neighbor_array in enumerate(RAM_neighbors[1:]):
+#            for ind, pixel in enumerate(neighbor_array[6:]):
+#                await FallingEdge(dut.clk)
+#                await spi_transfer_pi(int(pixel, 2), dut)
+#            if i%10000 == 0:
+#                print(f'Processed pixels: {i}')
+#
+#            if ind > PIXEL_SIM:
+#                break
+#
+#        await Timer(3)
+#        dut.ui_in[1].value = 1
+#    await FallingEdge(dut.clk)
+#
+#    # Write output RAM into txt file
+#    if select_process == 3:
+#        with open('output_image.txt', 'w') as file_out:
+#            for pixel in RAM_output_image:
+#                file_out.write(f"{pixel}\n")
+#
+#    else:
+#        with open('output_image.txt', 'w') as file_out:
+#            for pixel in RAM_output_image:
+#                file_out.write(f"{int(str(pixel), 2)}\n")
+#
+#    # ############### Read test bench output ####################
+#    await wait_file() # Wait until output file is completely written
+#
