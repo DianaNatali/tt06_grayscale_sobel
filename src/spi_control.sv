@@ -29,7 +29,6 @@ module spi_control (
     logic spi_rxtx_done;
     logic rxtx_done;
     logic rxtx_done_reg;
-    logic ncs_signal;
 
     // nreset synchronization
     spi_dep_signal_synchronizer signal_sync1 (
@@ -37,13 +36,6 @@ module spi_control (
         .nreset_i(nreset_i),
         .async_signal_i(spi_rxtx_done),
         .signal_o(rxtx_done)
-    );
-
-    spi_dep_signal_synchronizer signal_sync2 (
-        .clk_i(clk_i),
-        .nreset_i(nreset_i),
-        .async_signal_i(~spi_cs_i),
-        .signal_o(ncs_signal)
     );
 
     logic rxtx_done_rising;
