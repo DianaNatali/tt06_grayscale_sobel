@@ -8,7 +8,7 @@ class SpiTestBase:
     def __init__(self):
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)  # Open SPI bus 0, device 0
-        #self.spi.max_speed_hz = 33000000  # Set SPI speed
+        self.spi.max_speed_hz = 50000000  # Set SPI speed
         self.spi.mode = 0b10  # SPI mode
         self.setup_gpio()
 
@@ -43,7 +43,9 @@ class SpiTestBase:
             GPIO.setup(pin, GPIO.IN)
 
     def spi_transfer(self, data):
-        response = self.spi.xfer2([data >> 16, (data >> 8) & 0xFF, data & 0xFF])
+        data &= 0xFFFFFF
+        response = self.spi.xfer2([(data >> 16) & 0xFF , (data >> 8) & 0xFF, data & 0xFF])
+        print(response)
         return (response[0] << 16) | (response[1] << 8) | response[2]
 
     def cleanup(self):
@@ -70,15 +72,15 @@ class SpiBypassTest(SpiTestBase):
         GPIO.output(self.start_sobel, GPIO.LOW)
         
         N = 4
-        random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
+        random_numbers_array = [0x000000, 0xFFFFFF, 0x123456, 0xABCDEF]
 
         for number in random_numbers_array:
             print(f"{number} {number:06x}")
         
         for i, data in enumerate(random_numbers_array):
-            data = int(data)
-            read_data = self.spi_transfer(int(data))
-            print(read_data)
+            received_data = self.spi_transfer(int(data))
+            print(f"Respuesta recibida (en bits): {received_data:06x}")
+
             # if i > 0:
             #     #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
             #     assert read_data == random_numbers_array[i-1]
