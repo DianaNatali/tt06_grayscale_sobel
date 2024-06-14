@@ -30,7 +30,6 @@ module spi_control (
     logic rxtx_done;
     logic rxtx_done_reg;
 
-    // nreset synchronization
     spi_dep_signal_synchronizer signal_sync1 (
         .clk_i(clk_i),
         .nreset_i(nreset_i),
