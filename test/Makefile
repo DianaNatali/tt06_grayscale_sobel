@@ -33,7 +33,9 @@ TOPLEVEL = tt_um_gray_sobel
 # MODULE is the basename of the Python test file
 # MODULE = gray_sobel_TB
 MODULE = tt_um_gray_sobel_TB
-COMPILE_ARGS += -PUSE_POWER_PINS=1
+
+# COMPILE_ARGS += -PUSE_POWER_PINS=1
+
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
 

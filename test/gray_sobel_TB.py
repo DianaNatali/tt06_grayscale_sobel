@@ -8,7 +8,7 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
-select = 1
+select = 2
 
 def get_neighbors(ram_in, index, width):
     neighbors = []
