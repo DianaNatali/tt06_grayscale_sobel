@@ -56,7 +56,18 @@ class ImgPreprocessingChip:
 
         N = 10
         random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-        
+        for i, data in enumerate(random_numbers_array):
+            print(hex(data))
+            received_data = self.spi_bus.spi_transfer(int(data))
+            print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
+            hex_data = [hex(x) for x in received_data]
+            print(hex_data)
+
+    def echo_gray(self):
+        self.nreset.off()
+
+        N = 10
+        random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
         for i, data in enumerate(random_numbers_array):
             print(hex(data))
             received_data = self.spi_bus.spi_transfer(int(data))
@@ -69,6 +80,6 @@ class ImgPreprocessingChip:
 if __name__ == "__main__":
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
-    #chip.set_bypass_conf()
+    chip.set_bypass_conf()
     chip.echo()
         
