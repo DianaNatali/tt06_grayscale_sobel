@@ -42,8 +42,8 @@ class ImgPreprocessingChip:
         self.start_sobel.off()
 
     def set_sobel_conf(self):
-        self.select_process_bit0.off()
-        self.select_process_bit1.on()
+        self.select_process_bit0.on()
+        self.select_process_bit1.off()
         self.start_sobel.on()
 
     def set_graysobel_conf(self):
@@ -52,7 +52,7 @@ class ImgPreprocessingChip:
         self.start_sobel.on()
 
     def echo(self):
-        self.nreset.on()
+        self.nreset.off()
 
         N = 10
         random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
@@ -69,6 +69,6 @@ class ImgPreprocessingChip:
 if __name__ == "__main__":
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
-    chip.set_bypass_conf()
+    #chip.set_bypass_conf()
     chip.echo()
         
