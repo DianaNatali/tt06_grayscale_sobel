@@ -23,13 +23,13 @@ class SpiBus:
 class ImgPreprocessingChip:
     def __init__(self, spi:SpiBus=None):
         self.spi_bus = spi
-        self.nreset = gpio.OutputDevice(18, active_high=False, initial_value=False )
-        self.select_process_bit0 = gpio.OutputDevice(17, active_high=False, initial_value=False)
-        self.select_process_bit1 = gpio.OutputDevice(27, active_high=False, initial_value=False)
-        self.start_sobel = gpio.OutputDevice(22, active_high=False, initial_value=False)
-        self.LFSR_enable = gpio.OutputDevice(2, active_high=False, initial_value=False)
-        self.seed_stop = gpio.OutputDevice(3, active_high=False, initial_value=False)
-        self.lfsr_en_i = gpio.OutputDevice(4, active_high=False, initial_value=False)
+        self.nreset = gpio.OutputDevice(18, active_high=True, initial_value=False )
+        self.select_process_bit0 = gpio.OutputDevice(17, active_high=True, initial_value=False)
+        self.select_process_bit1 = gpio.OutputDevice(27, active_high=True, initial_value=False)
+        self.start_sobel = gpio.OutputDevice(22, active_high=True, initial_value=False)
+        self.LFSR_enable = gpio.OutputDevice(2, active_high=True, initial_value=False)
+        self.seed_stop = gpio.OutputDevice(3, active_high=True, initial_value=False)
+        self.lfsr_en_i = gpio.OutputDevice(4, active_high=True, initial_value=False)
 
     def set_bypass_conf(self):
         self.select_process_bit0.on()
@@ -52,7 +52,7 @@ class ImgPreprocessingChip:
         self.start_sobel.on()
 
     def echo(self):
-        self.nreset.off()
+        self.nreset.on()
 
         N = 10
         random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
@@ -64,7 +64,7 @@ class ImgPreprocessingChip:
             print(hex_data)
 
     def echo_gray(self):
-        self.nreset.off()
+        self.nreset.on()
 
         N = 10
         random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
@@ -80,6 +80,15 @@ class ImgPreprocessingChip:
 if __name__ == "__main__":
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
-    chip.set_bypass_conf()
-    chip.echo()
+    chip.set_gray_conf()
+    chip.echo_gray()
+    # input("press enter to finish")
+    # chip.set_gray_conf()
+    # input("press enter to finish")
+    # chip.set_sobel_conf()
+    # input("press enter to finish")
+    # chip.set_graysobel_conf()
+    # input("press enter to finish")
+
+    
         
