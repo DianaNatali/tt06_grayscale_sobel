@@ -1,4 +1,3 @@
-#import RPi.GPIO as GPIO
 import gpiozero as gpio
 import spidev
 import numpy as np
@@ -13,7 +12,7 @@ class SpiBus:
 
     def spi_transfer(self, data):
         data &= 0xFFFFFF
-        msg = data.to_bytes(6, 'little')
+        msg = data.to_bytes(12, 'little')
         response = self.spi.xfer2(msg)
         return response
 
@@ -51,27 +50,19 @@ class ImgPreprocessingChip:
         self.select_process_bit1.off()
         self.start_sobel.on()
 
-    def echo(self):
+    def echo(self, n_rand, use_gray=False):
         self.nreset.on()
 
-        N = 10
-        random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-        for i, data in enumerate(random_numbers_array):
+        random_array = np.random.randint(0, 2**24, n_rand, dtype=np.uint32)
+        for i, data in enumerate(random_array):
             print(hex(data))
             received_data = self.spi_bus.spi_transfer(int(data))
-            print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
-            hex_data = [hex(x) for x in received_data]
-            print(hex_data)
+            print(f'{i} {int.from_bytes(received_data[3:], "little"):x}', end='')
 
-    def echo_gray(self):
-        self.nreset.on()
+            if use_gray:
+                print(f' {emulation_gray(data):x}', end='')
 
-        N = 10
-        random_numbers_array = np.random.randint(0, 2**24, N, dtype=np.uint32)
-        for i, data in enumerate(random_numbers_array):
-            print(hex(data))
-            received_data = self.spi_bus.spi_transfer(int(data))
-            print(f'{i} {int.from_bytes(received_data[3:], "little"):x} {emulation_gray(data):x}')
+            print()  
             hex_data = [hex(x) for x in received_data]
             print(hex_data)
             
@@ -80,15 +71,7 @@ class ImgPreprocessingChip:
 if __name__ == "__main__":
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
+    chip.set_bypass_conf()
+    chip.echo(10)
     chip.set_gray_conf()
-    chip.echo_gray()
-    # input("press enter to finish")
-    # chip.set_gray_conf()
-    # input("press enter to finish")
-    # chip.set_sobel_conf()
-    # input("press enter to finish")
-    # chip.set_graysobel_conf()
-    # input("press enter to finish")
-
-    
-        
+    chip.echo(10, True)
