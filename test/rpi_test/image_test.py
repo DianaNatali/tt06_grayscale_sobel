@@ -67,8 +67,8 @@ if __name__ == "__main__":
     image = 'monarch_320x240.jpg'
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
-    chip.set_sobel_conf()
-    select_process = 1
+    chip.set_graysobel_conf()
+    select_process = 0
     img_test = image_test(image, select_process)
     input_array = img_test.get_array_input_image()
 
