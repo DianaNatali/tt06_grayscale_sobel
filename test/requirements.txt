@@ -1,4 +1,4 @@
-numpy<2
+numpy==1.18
 matplotlib>=3.2
-cocotb==1.6.0
-opencv-python==4.5.5.64
+cocotb
+opencv-python
