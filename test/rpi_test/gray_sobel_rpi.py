@@ -10,9 +10,9 @@ class SpiBus:
         self.spi.max_speed_hz = freq  # Set SPI speed
         self.spi.mode = 0b11  # SPI mode
 
-    def spi_transfer(self, data):
+    def spi_transfer(self, data, n_bytes):
         data &= 0xFFFFFF
-        msg = data.to_bytes(12, 'little')
+        msg = data.to_bytes(n_bytes, 'little')
         response = self.spi.xfer2(msg)
         return response
 
@@ -56,7 +56,7 @@ class ImgPreprocessingChip:
         random_array = np.random.randint(0, 2**24, n_rand, dtype=np.uint32)
         for i, data in enumerate(random_array):
             print(hex(data))
-            received_data = self.spi_bus.spi_transfer(int(data))
+            received_data = self.spi_bus.spi_transfer(int(data), 6)
             print(f'{i} {int.from_bytes(received_data[3:], "little"):x}', end='')
 
             if use_gray:
@@ -65,7 +65,32 @@ class ImgPreprocessingChip:
             print()  
             hex_data = [hex(x) for x in received_data]
             print(hex_data)
-            
+
+    def echo_sobel(self):
+        self.nreset.on()
+
+        random_array = [89, 88, 84, 89, 90, 88, 92, 94, 91, 95, 96, 92, 94, 95, 92, 96, 101, 104, 0, 0]
+        for i, data in enumerate(random_array[:9]):
+            received_data = self.spi_bus.spi_transfer(int(data), 5)
+            if i == 8:
+                print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
+                hex_data = [hex(x) for x in received_data]
+                print(hex_data)
+
+        for i, data in enumerate(random_array[9:]):
+            received_data = self.spi_bus.spi_transfer(int(data), 5)
+            if i%3 == 0 and i > 1:
+                print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
+                hex_data = [hex(x) for x in received_data]
+                print(hex_data)
+
+    def get_processed_pixel(self, pixel):
+        self.nreset.on()
+
+        received_data = self.spi_bus.spi_transfer(int(pixel), 6)
+        processed_pixel = int.from_bytes(received_data[3:], "little")
+        
+        return processed_pixel
 
 
 if __name__ == "__main__":
@@ -73,5 +98,9 @@ if __name__ == "__main__":
     chip = ImgPreprocessingChip(spi=bus_spi)
     chip.set_bypass_conf()
     chip.echo(10)
+    print('')
     chip.set_gray_conf()
     chip.echo(10, True)
+    print('')
+    chip.set_sobel_conf()
+    chip.echo_sobel()
