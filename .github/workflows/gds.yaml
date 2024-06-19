@@ -13,16 +13,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install numpy<2
-          pip install -r requirements.txt
-
       - name: Build GDS
         uses: TinyTapeout/tt-gds-action@tt06
   
@@ -30,27 +20,8 @@ jobs:
     needs: gds
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install numpy<2
-          pip install -r requirements.txt
-
-      - name: Set NIX_PATH
-        run: echo "export NIX_PATH=nixpkgs=$(nix eval --raw nixpkgs):$NIX_PATH" >> $GITHUB_ENV
-
       - name: Run Tiny Tapeout Precheck
-        run: |
-          nix-shell --run "python precheck.py --gds /home/runner/work/tt06_grayscale_sobel/tt06_grayscale_sobel/tt_submission/*.gds"
+        uses: TinyTapeout/tt-gds-action/precheck@tt06
 
   gl_test:
     needs: gds
@@ -61,19 +32,8 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install numpy<2
-          pip install -r requirements.txt
-
       - name: GL test
-        run: |
-          nix-shell --run "python gl_test.py"
+        uses: TinyTapeout/tt-gds-action/gl_test@tt06
 
   viewer:
     needs: gds
@@ -82,19 +42,4 @@ jobs:
       pages: write      # to deploy to Pages
       id-token: write   # to verify the deployment originates from an appropriate source
     steps:
-      - name: checkout repo
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install numpy<2
-          pip install -r requirements.txt
-
       - uses: TinyTapeout/tt-gds-action/viewer@tt06
