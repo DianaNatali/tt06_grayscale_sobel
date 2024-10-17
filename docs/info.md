@@ -14,7 +14,7 @@ This project takes an image, converts it to grayscale, and then applies an edge 
 Below is a block diagram of the implementation:
 
 <p align="center">
-    <img src=./arch.png alt="Descripción" width="380" height="250">
+    <img src=./arch.png alt="Descripción" width="410" height="270">
 </p>
 
 
