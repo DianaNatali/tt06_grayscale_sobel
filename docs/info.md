@@ -19,9 +19,9 @@ Below is a block diagram of the implementation:
 
 It is necessary for the pixels to be sent via an SPI protocol; for this purpose, the input ```ui_in[2:0]``` is designated as follows:
 
-* ```ui_in[0]``` ----> SPI Clock
-* ```ui_in[1]``` ----> Chip Select
-* ```ui_in[2]``` ----> Input Pixel
+* ```ui_in[0]``` &rarr; SPI Clock
+* ```ui_in[1]``` &rarr; Chip Select
+* ```ui_in[2]``` &rarr; Input Pixel
   
 As shown in the previous image, there are some processing options:
 
