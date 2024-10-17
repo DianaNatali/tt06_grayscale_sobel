@@ -9,7 +9,7 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-This project takes an image, converts it to grayscale, and then applies an edge detection algorithm.
+This project performs grayscale conversion and Sobel filtering with the aim of detecting edges in an image.
 
 Below is a block diagram of the implementation:
 
