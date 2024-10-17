@@ -13,10 +13,7 @@ This project performs grayscale conversion and Sobel filtering with the aim of d
 
 Below is a block diagram of the implementation:
 
-<p align="center">
-    <img src=./arch.png alt="Descripción" width="410" height="270">
-</p>
-
+![arc](arch.png)
 
 ## How to test
 
