@@ -8,39 +8,39 @@ from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
 
-select = 2
+select = 1
 
-def get_neighbors(ram_in, index, width):
+def get_neighbors(input_array, index, width):
     neighbors = []
     x = index % width
     y = index // width
 
     for i in range(max(0, x - 1), min(width, x + 2)):
-        for j in range(max(0, y - 1), min(len(ram_in) // width, y + 2)):
+        for j in range(max(0, y - 1), min(len(input_array) // width, y + 2)):
             neighbor_index = j * width + i
-            neighbors.append(ram_in[neighbor_index])
+            neighbors.append(input_array[neighbor_index])
     return neighbors
 
 
-def get_neighbor_array(image, ram_input):
+def get_neighbor_array(image, input_array):
     height, width, _ = image.shape
 
-    ram_neighbors = []
+    array_neighbors = []
 
     neighbor_count = 0
     for y in range(1, height - 1):
         for x in range(1, width - 1):
             i = y * width + x
-            neighbors = get_neighbors(ram_input, i, width)
-            ram_neighbors.append(neighbors)
+            neighbors = get_neighbors(input_array, i, width)
+            array_neighbors.append(neighbors)
             neighbor_count += 1
-    return ram_neighbors
+    return array_neighbors
 
 #-------------------------------Convert RGB image to grayscale------------------------------------------
-img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
+img_original = cv2.imread('../test_images/monarch_RGB.jpg', cv2.IMREAD_COLOR) 
 img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
 
-RAM_input_image = []
+array_input_image = []
 
 if select == 1:
     gray_opencv = cv2.cvtColor(img_original, cv2.COLOR_RGB2GRAY) 
@@ -48,17 +48,17 @@ if select == 1:
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f'{pixel:08b}')
+            array_input_image.append(f'{pixel:08b}')
 else:
     input_image = img_original
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
+            array_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
 
 
-with open('monarch_320x240.txt', 'w') as f:
-    for pixel in RAM_input_image:
+with open('input_pixels.txt', 'w') as f:
+    for pixel in array_input_image:
         f.write(f"{int(str(pixel), 2)}\n")
 #----------------------------------------cocotb test bench----------------------------------------------
 # Reset
@@ -73,11 +73,11 @@ async def wait_file():
     Path('output_image_sobel.txt').exists()
 
 # Parallel check of px_rdy_o and px_out
-async def monitor_px_rdy(px_rdy_o, RAM, px_out):
+async def monitor_px_rdy(px_rdy_o, array_output, px_out):
     while True:
         await RisingEdge(px_rdy_o)
         await FallingEdge(px_rdy_o)
-        RAM.append(px_out.value)
+        array_output.append(px_out.value)
 
 @cocotb.test()
 async def gray_sobel_TB(dut):
@@ -93,14 +93,14 @@ async def gray_sobel_TB(dut):
     dut.px_rdy_i.value = 0
 
     # Store processed pixels
-    RAM_output_image = []
+    array_output_image = []
 
     # Get px_rdy_o signal DUT (Device Under Test)
     px_rdy_o = dut.px_rdy_o
     px_out = dut.out_pixel_o
 
     # Start the process to monitor the px_rdy_o signal in parallel
-    cocotb.start_soon(monitor_px_rdy(px_rdy_o, RAM_output_image, px_out))
+    cocotb.start_soon(monitor_px_rdy(px_rdy_o, array_output_image, px_out))
     
     await reset_dut(dut, 10)    
 
@@ -109,18 +109,18 @@ async def gray_sobel_TB(dut):
 
     if select == 2 or  select == 3:
         dut.start_sobel_i.value = 0
-        for ind, pixel in enumerate(RAM_input_image):
+        for ind, pixel in enumerate(array_input_image):
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 1
             await FallingEdge(dut.clk_i)
             dut.px_rdy_i.value = 0
             dut.in_pixel_i.value = int(pixel, 2)
             if ind%10000 == 0:
-                print(f'Processed pixels: {ind}')
+                dut._log.info(f'Processed pixels: {ind}')
     else:
         dut.start_sobel_i.value = 1
-        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
-        firts_neighbors = RAM_neighbors[0]
+        array_neighbors = get_neighbor_array(img_original, array_input_image)
+        firts_neighbors = array_neighbors[0]
         
         for ind, pixel in enumerate(firts_neighbors):
             await FallingEdge(dut.clk_i)
@@ -129,7 +129,7 @@ async def gray_sobel_TB(dut):
             dut.px_rdy_i.value = 0
             dut.in_pixel_i.value = int(pixel, 2)
     
-        for i, neighbor_array in enumerate(RAM_neighbors[1:]):
+        for i, neighbor_array in enumerate(array_neighbors[1:]):
             for ind, pixel in enumerate(neighbor_array[6:]):
                 await FallingEdge(dut.clk_i)
                 dut.px_rdy_i.value = 1
@@ -137,22 +137,22 @@ async def gray_sobel_TB(dut):
                 dut.in_pixel_i.value = int(pixel, 2)
                 dut.px_rdy_i.value = 0
             if i%10000 == 0:
-                print(f'Processed pixels: {i}')
+                dut._log.info(f'Processed pixels: {i}')
 
     await FallingEdge(dut.clk_i)
     dut.px_rdy_i.value = 1
     await FallingEdge(dut.clk_i)
     dut.start_sobel_i.value = 0
 
-    # Write output RAM into txt file
+    # Write output array into txt file
     if select == 3:
         with open('output_image.txt', 'w') as file_out:
-            for pixel in RAM_output_image:
+            for pixel in array_output_image:
                 file_out.write(f"{pixel}\n")
 
     else:
         with open('output_image.txt', 'w') as file_out:
-            for pixel in RAM_output_image:
+            for pixel in array_output_image:
                 file_out.write(f"{int(str(pixel), 2)}\n")
 
     # ############### Read test bench output ####################

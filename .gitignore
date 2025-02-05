@@ -10,4 +10,6 @@ output_image.txt
 *.vcd
 *.xml
 output_image.jpg
+output_image.jpg
+input_pixels.txt
 .vscode

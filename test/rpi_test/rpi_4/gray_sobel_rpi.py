@@ -1,7 +1,11 @@
 import gpiozero as gpio
 import spidev
 import numpy as np
-from emulation_gray import *
+from gray_convertion import *
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 class SpiBus:
     def __init__(self, freq=1000000):
@@ -55,16 +59,16 @@ class ImgPreprocessingChip:
 
         random_array = np.random.randint(0, 2**24, n_rand, dtype=np.uint32)
         for i, data in enumerate(random_array):
-            print(hex(data))
+            logging.debug(f'{hex_data}')
             received_data = self.spi_bus.spi_transfer(int(data), 6)
-            print(f'{i} {int.from_bytes(received_data[3:], "little"):x}', end='')
+            logging.debug(f'{i} {int.from_bytes(received_data[3:], "little"):x}', end='')
 
             if use_gray:
-                print(f' {emulation_gray(data):x}', end='')
+                logging.debug(f' {emulation_gray(data):x}', end='')
 
-            print()  
+            print('')  
             hex_data = [hex(x) for x in received_data]
-            print(hex_data)
+            plogging.debug(f'{hex_data}')
 
     def echo_sobel(self):
         self.nreset.on()
@@ -73,16 +77,16 @@ class ImgPreprocessingChip:
         for i, data in enumerate(random_array[:9]):
             received_data = self.spi_bus.spi_transfer(int(data), 5)
             if i == 8:
-                print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
+                logging.debug(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
                 hex_data = [hex(x) for x in received_data]
-                print(hex_data)
+                logging.debug(f'{hex_data}')
 
         for i, data in enumerate(random_array[9:]):
             received_data = self.spi_bus.spi_transfer(int(data), 5)
             if i%3 == 0 and i > 1:
-                print(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
+                logging.debug(f'{i} {int.from_bytes(received_data[3:], "little"):x}')
                 hex_data = [hex(x) for x in received_data]
-                print(hex_data)
+                logging.debug(f'{hex_data}')
 
     def get_processed_pixel(self, pixel):
         self.nreset.on()

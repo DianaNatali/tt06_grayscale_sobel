@@ -1,4 +1,4 @@
-def emulation_gray(data):
+def gray_convertion(data):
     red = (data >> 16) & 0xFF
     green = (data >> 8) & 0xFF
     blue = data & 0xFF

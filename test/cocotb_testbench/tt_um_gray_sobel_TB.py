@@ -7,7 +7,6 @@ from cocotb.clock import Clock
 from cocotb.triggers import FallingEdge, RisingEdge
 from cocotb.triggers import Timer
 from matplotlib import pyplot as plt
-from gray_sobel import *
 
 ## Inputs
 ## spi_sck_i = ui_in[0]
@@ -41,36 +40,43 @@ half_period = clock_period * DUTY_CYCLE
 PIXEL_SIM = 10   # Number of pixels for testing
 select_process = 3
 
-def get_neighbors(ram_in, index, width):
+def get_neighbors(input_array, index, width):
     neighbors = []
     x = index % width
     y = index // width
 
     for i in range(max(0, x - 1), min(width, x + 2)):
-        for j in range(max(0, y - 1), min(len(ram_in) // width, y + 2)):
+        for j in range(max(0, y - 1), min(len(input_array) // width, y + 2)):
             neighbor_index = j * width + i
-            neighbors.append(ram_in[neighbor_index])
+            neighbors.append(input_array[neighbor_index])
     return neighbors
 
 
-def get_neighbor_array(image, ram_input):
+def get_neighbor_array(image, input_arrayput):
     height, width, _ = image.shape
-    ram_neighbors = []
+    array_neighbors = []
     neighbor_count = 0 
     for y in range(1, height - 1):
         for x in range(1, width - 1):
             i = y * width + x
-            neighbors = get_neighbors(ram_input, i, width)
-            ram_neighbors.append(neighbors)
+            neighbors = get_neighbors(input_arrayput, i, width)
+            array_neighbors.append(neighbors)
             neighbor_count += 1
-    return ram_neighbors
+    return array_neighbors
+
+def gray_convertion(data):
+    red = (data >> 16) & 0xFF
+    green = (data >> 8) & 0xFF
+    blue = data & 0xFF
+    result = (red>>2)+(red>>5)+(green>>1)+(green>>4)+(blue>>4)+(blue>>5)
+    return result
 
 
 #-------------------------------Convert RGB image to grayscale------------------------------------------
-img_original = cv2.imread('monarch_RGB.jpg', cv2.IMREAD_COLOR) 
+img_original = cv2.imread('../test_images/monarch_RGB.jpg', cv2.IMREAD_COLOR) 
 img_original = cv2.cvtColor(img_original, cv2.COLOR_BGR2RGB)
 
-RAM_input_image = []
+array_input_image = []
 
 if select_process == 1:
     gray_opencv = cv2.cvtColor(img_original, cv2.COLOR_RGB2GRAY) 
@@ -78,13 +84,13 @@ if select_process == 1:
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f'{pixel:08b}')
+            array_input_image.append(f'{pixel:08b}')
 else:
     input_image = img_original
     for i in range(0,240): 
         for j in range(0,320):
             pixel = input_image[i][j]
-            RAM_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
+            array_input_image.append(f"{pixel[0]:08b}{pixel[1]:08b}{pixel[2]:08b}")
 #----------------------------------------cocotb test bench----------------------------------------------
 #reset
 async def reset_dut(dut, duration_ns):
@@ -120,7 +126,6 @@ async def spi_transfer_pi(data, dut):
     dut.ui_in[2].value = 0
     data_tx_rpi = swap_bytes(data)
 
-     # Transferir datos bit a bit
     for i in range(STREAM_DATA_WIDTH):
         dut.ui_in[0].value = 0
         dut.ui_in[2].value = (data_tx_rpi >> (STREAM_DATA_WIDTH - 1 - i)) & 0x01
@@ -140,13 +145,13 @@ async def wait_file():
     Path('output_image_sobel.txt').exists()
 
 # Parallel check of px_rdy_o and px_out
-async def monitor_px_rdy(dut, RAM):
+async def monitor_px_rdy(dut, array):
     mask_7 = 1 << 7
     px_rdy_o = (dut.uio_out.value.integer & mask_7) >> 7
     while True:
         await RisingEdge(px_rdy_o)
         await FallingEdge(px_rdy_o)
-    #     #RAM.append(px_out.value)
+    #     #array.append(px_out.value)
     #     px_rdy_high_count += 1
 
 #Bypass Test For SPI Data!
@@ -184,7 +189,7 @@ async def tt_um_gray_sobel_bypass(dut):
     for i, data in enumerate(random_numbers_array):
         read_data = await spi_transfer_pi(int(data), dut)
         if i > 0:
-            #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            # dut._log.info(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
             assert read_data == random_numbers_array[i-1]
     
     await Timer(20)
@@ -229,8 +234,8 @@ async def tt_um_gray_sobel_gray(dut):
     for i, data in enumerate(random_numbers_array):
         read_data = await spi_transfer_pi(int(data), dut)
         if i > 0:
-            print(f"{i} {read_data:x} {emulation_gray(random_numbers_array[i-1]):x}")
-            assert read_data == emulation_gray(random_numbers_array[i-1])
+             dut._log.info(f"{i} {read_data:x} {gray_convertion(random_numbers_array[i-1]):x}")
+            assert read_data == gray_convertion(random_numbers_array[i-1])
     
     await Timer(20)
     dut.ui_in[1].value = 1
@@ -277,12 +282,12 @@ async def tt_um_gray_sobel_sobel(dut):
     await Timer(20)
     for i, data in enumerate(pixel_gray_array):
         read_data = await spi_transfer_pi(int(data), dut)
-        print(f"{i} {read_data:x} {pixel_sobel_array[i]:x}\n")
+         dut._log.info(f"{i} {read_data:x} {pixel_sobel_array[i]:x}\n")
         #if i > 0:
-        #    print(f"{i} {read_data:x}\n")
+        #     dut._log.info(f"{i} {read_data:x}\n")
             #if i == 8:
-                #print(f"{pixel_sobel_array[0]:x}\n")
-                #assert read_data == emulation_gray(random_numbers_array[i-1])
+                #dut._log.info(f"{pixel_sobel_array[0]:x}\n")
+                #assert read_data == gray_convertion(random_numbers_array[i-1])
 
     await Timer(20)
     dut.ui_in[1].value = 1
@@ -326,7 +331,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     for i in range(N):
         read_data = await spi_transfer_pi(int(seed), dut)
         if i > 0:
-            #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            #dut._log.info(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
             assert read_data == seed
     
     await Timer(20)
@@ -355,7 +360,7 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
     for i in range(N):
         read_data = await spi_transfer_pi(int(stop), dut)
         if i > 0:
-            #print(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
+            #dut._log.info(f"{i} {read_data:x} {random_numbers_array[i-1]:x}")
             assert read_data == stop
     
     await Timer(20)
@@ -364,97 +369,3 @@ async def tt_um_gray_sobel_lfsr_seed_stop(dut):
 
     dut.uio_in[2].value = 1
     await Timer(200)
-
-#@cocotb.test()
-#async def tt_um_gray_sobel_TB(dut):
-#    # Clock cycle
-#    cocotb.fork(Clock(dut.clk, 2 * half_period, units="ns").start())
-#
-#    # Inital
-#    dut.ena.value = 0
-#    dut.ui_in.value = 0
-#    rpi_mosi = 0
-#    rpi_ss = 1 
-#    rpi_sck = 1
-#
-#    # Store processed pixels
-#    RAM_output_image = []
-#      
-#    select_bin = "{:02b}".format(select_process) 
-#    dut.ena.value = 1
-#    start_sobel = 0
-#    select_input = 1
-#    dut.uio_in.value = 0
-#
-#    ui_in_value = (int(rpi_sck) << 0) | (int(rpi_ss) << 1) | (int(rpi_mosi) << 2) | (int(select_bin[1]) << 3) | (int(select_bin[0]) << 4) | (int(start_sobel) << 5) | (int(select_input) << 6)
-#    dut.ui_in.value = ui_in_value
-#
-#    # Get px_rdy_o signal DUT (Device Under Test)
-#    #cocotb.start_soon(monitor_px_rdy(dut, RAM_output_image))
-#
-#    # Start the process to monitor the px_rdy_o signal in parallel
-#    dut.ui_in[1].value = 1
-#    await reset_dut(dut, 100)
-#
-#    if select_process == 2 or  select_process == 3:
-#        print(f"Running! select_process = {select_process}")
-#        start_sobel = 0
-#        mask_start_sobel = 1 << 5
-#        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
-#        dut.ui_in.value = ui_in_value
-#
-#        await FallingEdge(dut.clk)
-#        await Timer(20)
-#        dut.ui_in[1].value = 0
-#        await Timer(3)
-#        for ind, pixel in enumerate(RAM_input_image):
-#            await spi_transfer_pi(int(pixel, 2), dut)
-#            
-#            if ind%10000 == 0:
-#                print(f'Processed pixels: {ind}')
-#            
-#            if ind > PIXEL_SIM:
-#                break
-#
-#        dut.ui_in[1].value = 1
-#    else:
-#        start_sobel = 1
-#        mask_start_sobel = 1 << 5
-#        ui_in_value = (dut.ui_in.value & ~mask_start_sobel) | (start_sobel << 5)
-#        dut.ui_in.value = ui_in_value
-#
-#        RAM_neighbors = get_neighbor_array(img_original, RAM_input_image)
-#        firts_neighbors = RAM_neighbors[0]
-#
-#        for ind, pixel in enumerate(firts_neighbors):
-#            await FallingEdge(dut.clk)
-#            await spi_transfer_pi(int(pixel, 2), dut)
-#
-#        for i, neighbor_array in enumerate(RAM_neighbors[1:]):
-#            for ind, pixel in enumerate(neighbor_array[6:]):
-#                await FallingEdge(dut.clk)
-#                await spi_transfer_pi(int(pixel, 2), dut)
-#            if i%10000 == 0:
-#                print(f'Processed pixels: {i}')
-#
-#            if ind > PIXEL_SIM:
-#                break
-#
-#        await Timer(3)
-#        dut.ui_in[1].value = 1
-#    await FallingEdge(dut.clk)
-#
-#    # Write output RAM into txt file
-#    if select_process == 3:
-#        with open('output_image.txt', 'w') as file_out:
-#            for pixel in RAM_output_image:
-#                file_out.write(f"{pixel}\n")
-#
-#    else:
-#        with open('output_image.txt', 'w') as file_out:
-#            for pixel in RAM_output_image:
-#                file_out.write(f"{int(str(pixel), 2)}\n")
-#
-#    # ############### Read test bench output ####################
-#    await wait_file() # Wait until output file is completely written
-#

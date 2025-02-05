@@ -1,5 +1,5 @@
 `ifdef COCOTB_SIM
-  `include "../src/parameters.svh"
+  `include "../../src/parameters.svh"
 `else
   `include "parameters.svh"
 `endif

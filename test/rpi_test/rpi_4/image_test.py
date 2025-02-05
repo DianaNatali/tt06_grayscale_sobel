@@ -64,7 +64,7 @@ class image_test():
 
     
 if __name__ == "__main__":
-    image = 'monarch_320x240.jpg'
+    image = '../test_images/monarch_320x240.jpg'
     bus_spi = SpiBus()
     chip = ImgPreprocessingChip(spi=bus_spi)
     chip.set_graysobel_conf()

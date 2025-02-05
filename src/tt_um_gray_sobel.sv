@@ -1,5 +1,5 @@
 `ifdef COCOTB_SIM
-  `include "../src/parameters.svh"
+  `include "../../src/parameters.svh"
 `else
   `include "parameters.svh"
 `endif
@@ -19,6 +19,9 @@ module tt_um_gray_sobel (
     assign uio_oe = 8'b00000000; 
     assign uio_out = '0;
     assign uo_out[7:3] = output_px[4:0];
+    assign uo_out[7:5] = output_px[2:0];
+    assign uo_out[4:3] = select_process_i;
+    
 
     logic nreset_async_i;
     assign nreset_async_i = rst_n;
