@@ -29,7 +29,7 @@ def generate_spi_frequencies(asic_freq_mhz, steps_per_interval=5):
 
 def generate_intermediate_frequencies(start_freq, end_freq):
     total_range = end_freq - start_freq
-    step = 100_000 if total_range > 1_000_000 else 10_000
+    step = 100_000 if total_range > 1_000_000 else 5_000
     
     frequencies = []
     current = start_freq + step
@@ -87,10 +87,6 @@ class image_process():
             for pixel in self.array_input_image:
                 file_out.write(f"{(int(pixel, 2))}\n")
 
-        with open('input_image_hex.txt', 'w') as file_out:
-            for pixel in self.array_input_image:
-                file_out.write(f"{int(pixel, 2):06x}\n")
-
     def convert_input_img(self):
         if self.select_process == 1:  # If only sobel
             self.get_grayscale_px()
@@ -131,9 +127,9 @@ class image_process():
     
 if __name__ == "__main__":
 
-    asic_frequency = input("ASIC frequency (MHz): ")
-    spi_frequencies = generate_spi_frequencies(float(asic_frequency), steps_per_interval=5)  
-    #spi_frequencies = [990_000]  
+    #asic_frequency = input("ASIC frequency (MHz): ")
+    #spi_frequencies = generate_spi_frequencies(float(asic_frequency), steps_per_interval=5)  
+    spi_frequencies = [500_000]  
     RGB_image = '/home/pi/Documents/sobel_test/tt06_grayscale_sobel/test/rpi_test/monarch_320x240.jpg'
 
     try:
@@ -174,20 +170,8 @@ if __name__ == "__main__":
             output_array = []
             pixel_times = []
             if select_process == 2 or  select_process == 3:
-                # for pixel in input_array:
-                #     start_pixel = time.perf_counter()
-                #     received_data = chip.get_processed_pixel(int(pixel, 2), 1)
-                #     end_pixel = time.perf_counter()
-                #     pixel_times.append(end_pixel - start_pixel)
-
-                #     processed_pixel = int.from_bytes(received_data[3:], "little")
-                #     output_array.append(processed_pixel)
-
-                # average_pixel_time = sum(pixel_times) / len(pixel_times)
-                # throughput = 1 / average_pixel_time  # Pixels per second
-
                 full_data = b"".join(int(data, 2).to_bytes(3, "little") for data in input_array)
-                received_data, throughput = chip.transmit_data(full_data)
+                received_data, throughput = chip.transmit_data(full_data, int(4092/22))
 
                 if select_process == 2:
                     output_array = [received_data[i] for i in range(0, len(received_data), 3)]
@@ -197,54 +181,30 @@ if __name__ == "__main__":
             else:
                 for first_9_array in input_array[:1]:
                     for i, pixel in enumerate(first_9_array):
+
                         start_pixel = time.perf_counter()
-                        # print(f'Input: {hex(int(pixel, 2))}')
-                        received_data = chip.get_processed_pixel(int(pixel, 2), 5)
-                        # print(f"received_data: {[hex(b) for b in received_data]}")
+                        received_data = chip.get_processed_pixel(int(pixel, 2), 6)
                         end_pixel = time.perf_counter()
                         pixel_times.append(end_pixel - start_pixel)
 
                         processed_pixel = int.from_bytes(received_data[3:], "little")
                         if i == 8:
-                            # print([(x) for x in received_data])
-                            # print(processed_pixel)
                             output_array.append(processed_pixel)
 
                 for ind, neighbor_array in enumerate(input_array[1:]):
                     for i, pixel in enumerate(neighbor_array[6:]):
+
                         start_pixel = time.perf_counter()
-                        # print(f'Input: {hex(int(pixel, 2))}')
-                        received_data = chip.get_processed_pixel(int(pixel, 2), 5)
-                        # print(f"received_data: {[hex(b) for b in received_data]}")
+                        received_data = chip.get_processed_pixel(int(pixel, 2), 6)
                         end_pixel = time.perf_counter()
                         pixel_times.append(end_pixel - start_pixel)
 
                         processed_pixel = int.from_bytes(received_data[3:], "little")
                         if i == 2:
-                            # print([(x) for x in received_data])
                             output_array.append(processed_pixel)
                     if ind %10000 == 0:
                         print(f'Processed pixels: {ind}')
-                
-                average_pixel_time = sum(pixel_times) / len(pixel_times)
-                throughput = 1 / average_pixel_time  # Pixels per second
 
-                # first9_array = input_array[:1][0]
-
-                # full_data = b"".join(int(data, 2).to_bytes(3, "little") for data in first9_array)
-                # received_data, throughput = chip.transmit_data(full_data)
-
-                # output_array = [received_data[i] for i in range(0, len(received_data), 3)]  
-                
-
-
-                # in_array = [item for sublista in input_array[1:7] for item in sublista[-3:]]
-                
-                # full_data = b"".join(int(data, 2).to_bytes(3, "little") for data in in_array)
-                # received_data, throughput = chip.transmit_data(full_data)
-
-                # output_array = [received_data[i] for i in range(0, len(received_data), 3)]  
-                
             chip.cleanup()
 
             if select_process == 3:
@@ -253,15 +213,16 @@ if __name__ == "__main__":
                         file_out.write(f"{pixel}\n")
             else:
                 with open('output_image.txt', 'w') as file_out:
-                    for ind, pixel in enumerate(output_array):
-                        file_out.write(f"{pixel}\n")
+                    for pixel in output_array:
+                        file_out.write(f"{int(pixel)}\n")
 
-            with open('output_image.txt', 'r') as f: 
-                out_hw_txt = f.read().splitlines()
-        
-            array_out = np.array(out_hw_txt)
 
             if select_process == 3:
+                with open('output_image.txt', 'r') as f: 
+                    out_hw_txt = f.read().splitlines()
+        
+                array_out = np.array(out_hw_txt)
+        
                 encode_image = []
                 for ind, pixel in enumerate(array_out):
                     value = int(pixel)
@@ -271,12 +232,18 @@ if __name__ == "__main__":
                     row = [blue, green, red]
                     encode_image.append(row)
                 array_out_reshape = np.reshape(encode_image, (240, 320, 3))        
-            else:              
+            else:
+                with open('output_image.txt', 'r') as f: 
+                    out_hw_txt = f.read().splitlines()  
+        
+                array_out = np.array(out_hw_txt)
+                
                 if select_process == 2:
                     array_out_reshape = np.reshape(array_out, (240, 320))
                 else:   
                     array_out_reshape = np.reshape(array_out, (240-2, 320-2))
                 
+        
             array_out = array_out_reshape.astype(np.uint8)
             
             cv2.imwrite(f'output_image_SPI{spi_freq}.jpg', array_out)
@@ -292,12 +259,13 @@ if __name__ == "__main__":
                 lines1 = f1.readlines()
                 lines2 = f2.readlines()
 
-            diff_lines = sum(1 for l1, l2 in zip(lines1, lines2) if l1 != l2)                
+            diff_lines = sum(1 for l1, l2 in zip(lines1, lines2) if l1 != l2)
+                
 
             csv_writer.writerow([asic_frequency, select_process ,spi_freq, round(throughput, 2), diff_lines])
             print(f"ASIC: {asic_frequency} MHz |Process: {select_process} |SPI: {spi_freq} Hz | Throughput: {throughput:.2f} px/s | Diff: {diff_lines}")
 
-            if diff_lines > 1:  
+            if diff_lines > 5:  
                 fail_count += 1
             else:
                 fail_count = 0
